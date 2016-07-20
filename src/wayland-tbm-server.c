@@ -80,6 +80,8 @@ struct wayland_tbm_buffer {
 
 	struct wl_list link;
 	struct wl_list link_ref;	/*link to same tbm_surface_h*/
+
+	tbm_fd sync_timeline;
 };
 
 struct wayland_tbm_client_resource {
@@ -164,6 +166,10 @@ _wayland_tbm_server_buffer_destory(struct wl_resource *wl_buffer)
 
 	tbm_surface_internal_set_debug_data(tbm_buffer->surface, "id", NULL);
 	wl_list_remove(&tbm_buffer->link_ref);
+
+	if (tbm_buffer->sync_timeline != -1)
+		close(tbm_buffer->sync_timeline);
+
 	tbm_surface_internal_unref(tbm_buffer->surface);
 	free(tbm_buffer);
 }
@@ -232,6 +238,8 @@ _wayland_tbm_server_tbm_buffer_create(struct wl_resource *wl_tbm,
 			}
 		}
 	}
+
+	tbm_buffer->sync_timeline = -1;
 
 	return tbm_buffer;
 }
@@ -648,11 +656,34 @@ _wayland_tbm_server_impl_create_surface_queue(struct wl_client *client,
 
 }
 
+static void
+_wayland_tbm_server_impl_set_sync_timeline(struct wl_client *client,
+		struct wl_resource *wl_tbm,
+		struct wl_resource *wl_buffer,
+		int32_t timeline_fd)
+{
+	struct wayland_tbm_buffer *tbm_buffer  = NULL;
+
+	WL_TBM_RETURN_IF_FAIL(wl_buffer != NULL);
+
+	if (wl_resource_instance_of(wl_buffer, &wl_buffer_interface,
+				    &_wayland_tbm_buffer_impementation)) {
+
+		tbm_buffer = wl_resource_get_user_data(wl_buffer);
+
+		if (tbm_buffer->sync_timeline != -1)
+			close(tbm_buffer->sync_timeline);
+
+		tbm_buffer->sync_timeline = timeline_fd;
+	}
+}
+
 static const struct wl_tbm_interface _wayland_tbm_server_implementation = {
 	_wayland_tbm_server_impl_create_buffer,
 	_wayland_tbm_server_impl_create_buffer_with_fd,
 	_wayland_tbm_server_impl_request_tbm_monitor,
 	_wayland_tbm_server_impl_create_surface_queue,
+	_wayland_tbm_server_impl_set_sync_timeline,
 };
 
 static void
@@ -1074,3 +1105,22 @@ wayland_tbm_server_client_queue_export_buffer(struct wayland_tbm_client_queue *c
 	return tbm_buffer->wl_buffer;
 }
 
+void
+wayland_tbm_server_increase_buffer_sync_timeline(struct wayland_tbm_server *tbm_srv,
+			       struct wl_resource *wl_buffer, unsigned int count)
+{
+	struct wayland_tbm_buffer *tbm_buffer  = NULL;
+
+//	WL_TBM_RETURN_VAL_IF_FAIL(tbm_srv != NULL);
+	WL_TBM_RETURN_IF_FAIL(wl_buffer != NULL);
+
+	if (wl_resource_instance_of(wl_buffer, &wl_buffer_interface,
+				    &_wayland_tbm_buffer_impementation)) {
+		tbm_buffer = wl_resource_get_user_data(wl_buffer);
+
+		if (tbm_buffer->sync_timeline != -1)
+			tbm_sync_timeline_inc(tbm_buffer->sync_timeline, count);
+	}
+
+	return;
+}

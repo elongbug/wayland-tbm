@@ -37,6 +37,7 @@ extern "C" {
 #include <wayland-client.h>
 #include <tbm_surface.h>
 #include <tbm_surface_queue.h>
+#include <tbm_sync.h>
 
 struct wayland_tbm_client;
 
@@ -53,6 +54,10 @@ wayland_tbm_client_create_buffer(struct wayland_tbm_client *tbm_client,
 void
 wayland_tbm_client_destroy_buffer(struct wayland_tbm_client *tbm_client,
 				  struct wl_buffer *buffer);
+
+void
+wayland_tbm_client_set_sync_timeline(struct wayland_tbm_client *tbm_client,
+								struct wl_buffer *buffer, tbm_fd timeline);
 
 void *
 wayland_tbm_client_get_bufmgr(struct wayland_tbm_client *tbm_client);

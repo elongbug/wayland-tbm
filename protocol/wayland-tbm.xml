@@ -143,6 +143,11 @@
       <arg name="buf1"	type="fd"/>
       <arg name="buf2"	type="fd"/>
     </event>
+
+    <request name="set_sync_timeline">
+      <arg name="buffer" type="object" interface="wl_buffer"/>
+      <arg name="timeline" type="fd"/>
+    </request>
   </interface>
 
   <interface name="wl_tbm_queue" version="1">

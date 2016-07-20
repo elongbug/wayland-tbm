@@ -37,6 +37,7 @@ DEALINGS IN THE SOFTWARE.
 #include <tbm_surface.h>
 #include <tbm_surface_queue.h>
 #include <tbm_surface_internal.h>
+#include <tbm_sync.h>
 
 #include "wayland-tbm-client.h"
 #include "wayland-tbm-client-protocol.h"
@@ -559,6 +560,16 @@ wayland_tbm_client_destroy_buffer(struct wayland_tbm_client *tbm_client,
 
 	wl_buffer_set_user_data(wl_buffer, NULL);
 	wl_buffer_destroy(wl_buffer);
+}
+
+void
+wayland_tbm_client_set_sync_timeline(struct wayland_tbm_client *tbm_client,
+								struct wl_buffer *wl_buffer, tbm_fd timeline)
+{
+	WL_TBM_RETURN_IF_FAIL(tbm_client != NULL);
+	WL_TBM_RETURN_IF_FAIL(wl_buffer != NULL);
+
+	wl_tbm_set_sync_timeline(tbm_client->wl_tbm, wl_buffer, timeline);
 }
 
 void *

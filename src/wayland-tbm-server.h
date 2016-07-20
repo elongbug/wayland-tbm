@@ -92,6 +92,10 @@ wayland_tbm_server_client_queue_export_buffer(struct wayland_tbm_client_queue *c
 void
 wayland_tbm_server_client_queue_flush(struct wayland_tbm_client_queue *cqueue);
 
+void
+wayland_tbm_server_increase_buffer_sync_timeline(struct wayland_tbm_server *tbm_srv,
+			       struct wl_resource *wl_buffer, unsigned int count);
+
 #ifdef  __cplusplus
 }
 #endif
