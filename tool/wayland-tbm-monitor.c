@@ -45,10 +45,7 @@ struct wayland_tbm_monitor {
 		union {
 			int  subcommand;
 			WL_TBM_MONITOR_TRACE_COMMAND trace_command;
-			struct {
-				WL_TBM_MONITOR_DUMP_COMMAND dump_command : 16;
-				WL_TBM_MONITOR_DUMP_TYPE dump_type : 16;
-			};
+			WL_TBM_MONITOR_DUMP_COMMAND dump_command;
 		};
 		WL_TBM_MONITOR_TARGET target;
 		int pid;
@@ -115,35 +112,24 @@ _wl_tbm_trace_usage()
 static void
 _wl_tbm_dump_usage()
 {
-	WL_TBM_LOG("  dump : dump the tbm_bos\n");
+	WL_TBM_LOG("  dump : dump the tbm_surfaces\n");
 	WL_TBM_LOG("   usage : wayland-tbm-monitor dump [command]\n");
 	WL_TBM_LOG("    <command>\n");
-	WL_TBM_LOG("      snapshot client [pid]         : make dumps of all tbm_bos for the client with pid.\n");
-	WL_TBM_LOG("      snapshot server               : make dumps of all tbm_bos for the server.\n");
-	WL_TBM_LOG("      snapshot all                  : make dumps of all tbm_bos for all clients and server.\n");
-	WL_TBM_LOG("      on                            : turn on process of dumping.\n");
-	WL_TBM_LOG("      off                           : turn off process of dumping.\n");
-	WL_TBM_LOG("      register [type] client [pid]  : register the pid of client.\n");
-	WL_TBM_LOG("      register [type] server        : register the server.\n");
-	WL_TBM_LOG("      register [type] all           : register all clients and server.\n");
-	WL_TBM_LOG("      unregister client [pid]       : unregister the pid of client.\n");
-	WL_TBM_LOG("      unregister server             : unregister the server.\n");
-	WL_TBM_LOG("      unregister all                : unregister all clients and server.\n");
-	WL_TBM_LOG("      status                        : show the status of the dump setting values.\n");
-	WL_TBM_LOG("    <type>\n");
-	WL_TBM_LOG("      import                        : make dump when a tbm_bo is imported/exported.\n");
-	WL_TBM_LOG("      ref                           : make dump when a tbm_bo is ref/unref.\n");
-	WL_TBM_LOG("      map                           : make dump when a tbm_bo is mapped/unmapped.\n");
+	WL_TBM_LOG("      snapshot client [pid] : make dumps of all tbm_surfaces for the client with pid.\n");
+	WL_TBM_LOG("      snapshot server       : make dumps of all tbm_surfaces for the server.\n");
+	WL_TBM_LOG("      snapshot all          : make dumps of all tbm_surfaces for all clients and server.\n");
+	WL_TBM_LOG("      queue client [pid]    : make dumps of all tbm_surfaces for the client with pid at enqueue and aquire.\n");
+	WL_TBM_LOG("      queue server          : make dumps of all tbm_surfaces for the server at enqueue and aquire.\n");
+	WL_TBM_LOG("      queue all             : make dumps of all tbm_surfaces for all clients and server at enqueue and aquire.\n");
+	WL_TBM_LOG("      queue on              : turn on the dumps of the tbm surface queue.\n");
+	WL_TBM_LOG("      queue off             : turn off the dumps of the tbm surface queue.\n");
 	WL_TBM_LOG("    <examples>\n");
-	WL_TBM_LOG("      # wayland-tbm-monitor dump register map client 1234\n");
-	WL_TBM_LOG("      # wayland-tbm-monitor dump register import all\n");
-	WL_TBM_LOG("      # wayland-tbm-monitor dump unregister all\n");
 	WL_TBM_LOG("      # wayland-tbm-monitor dump snapshot all\n");
-	WL_TBM_LOG("      # wayland-tbm-monitor dump on\n");
-	WL_TBM_LOG("      # wayland-tbm-monitor dump off\n");
+	WL_TBM_LOG("      # wayland-tbm-monitor dump queue all\n");
+	WL_TBM_LOG("      # wayland-tbm-monitor dump queue on\n");
+	WL_TBM_LOG("      # wayland-tbm-monitor dump queue off\n");
 	WL_TBM_LOG("\n");
 }
-
 
 static void
 _wl_tbm_show_usage()
@@ -178,22 +164,6 @@ _wl_tbm_usage()
 	_wl_tbm_trace_usage();
 	_wl_tbm_dump_usage();
 	WL_TBM_LOG("\n");
-}
-
-static int
-_wl_tbm_select_dump_type_option(struct wayland_tbm_monitor *tbm_monitor, int argc,
-								char *argv[], int arg_pos)
-{
-	if (!strncmp(argv[arg_pos], "import", strlen(argv[arg_pos]) + 1))
-		tbm_monitor->options.dump_type = WL_TBM_MONITOR_DUMP_TYPE_IMPORT;
-	else if (!strncmp(argv[arg_pos], "ref", strlen(argv[arg_pos]) + 1))
-		tbm_monitor->options.dump_type = WL_TBM_MONITOR_DUMP_TYPE_REF;
-	else if (!strncmp(argv[arg_pos], "map", strlen(argv[arg_pos]) + 1))
-		tbm_monitor->options.dump_type = WL_TBM_MONITOR_DUMP_TYPE_MAP;
-	else
-		return 0;
-
-	return 1;
 }
 
 static int
@@ -291,56 +261,35 @@ _wl_tbm_monitor_process_options(struct wayland_tbm_monitor *tbm_monitor,
 		}
 	} else if (!strncmp(argv[1], "dump", strlen(argv[1]) + 1)) {
 
+		if (argc < 4) {
+			_wl_tbm_dump_usage();
+			return 0;
+		}
+
 		tbm_monitor->options.command = WL_TBM_MONITOR_COMMAND_DUMP;
 
-		if (!strncmp(argv[2], "on", strlen(argv[2]) + 1)) {
-			tbm_monitor->options.dump_command = WL_TBM_MONITOR_DUMP_COMMAND_ON;
-			tbm_monitor->options.target = WL_TBM_MONITOR_TARGET_ALL;
-		} else if (!strncmp(argv[2], "off", strlen(argv[2]) + 1)) {
-			tbm_monitor->options.dump_command = WL_TBM_MONITOR_DUMP_COMMAND_OFF;
-			tbm_monitor->options.target = WL_TBM_MONITOR_TARGET_ALL;
-		} else if (!strncmp(argv[2], "snapshot", strlen(argv[2]) + 1)) {
+		if (!strncmp(argv[2], "snapshot", strlen(argv[2]) + 1)) {
 			tbm_monitor->options.dump_command = WL_TBM_MONITOR_DUMP_COMMAND_SNAPSHOT;
-			if (argc < 4)
+			if (!_wl_tbm_select_target_option(tbm_monitor, argc, argv, 3)) {
+				WL_TBM_LOG("error: no pid. please type the target(client [pid]/server/all).\n");
+				_wl_tbm_dump_usage();
+				return 0;
+			}
+		} else if (!strncmp(argv[2], "queue", strlen(argv[2]) + 1)) {
+
+			if (!strncmp(argv[3], "on", strlen(argv[3]) + 1)) {
+				tbm_monitor->options.dump_command = WL_TBM_MONITOR_DUMP_COMMAND_ON;
 				tbm_monitor->options.target = WL_TBM_MONITOR_TARGET_ALL;
-			else {
+			} else if (!strncmp(argv[3], "off", strlen(argv[3]) + 1)) {
+				tbm_monitor->options.dump_command = WL_TBM_MONITOR_DUMP_COMMAND_OFF;
+				tbm_monitor->options.target = WL_TBM_MONITOR_TARGET_ALL;
+			} else {
+				tbm_monitor->options.dump_command = WL_TBM_MONITOR_DUMP_COMMAND_QUEUE;
 				if (!_wl_tbm_select_target_option(tbm_monitor, argc, argv, 3)) {
 					WL_TBM_LOG("error: no pid. please type the target(client [pid]/server/all).\n");
 					_wl_tbm_dump_usage();
 					return 0;
 				}
-			}
-		} else if (!strncmp(argv[2], "register", strlen(argv[2]) + 1)) {
-			if (argc < 5) {
-				WL_TBM_LOG("error: no pid. please type the target(client [pid]/server/all).\n");
-				_wl_tbm_dump_usage();
-				return 0;
-			}
-
-			tbm_monitor->options.trace_command = WL_TBM_MONITOR_DUMP_COMMAND_REGISTER;
-
-			if (!_wl_tbm_select_dump_type_option(tbm_monitor, argc, argv, 3)) {
-				_wl_tbm_dump_usage();
-				return 0;
-			}
-
-			if (!_wl_tbm_select_target_option(tbm_monitor, argc, argv, 4)) {
-				WL_TBM_LOG("error: no pid. please type the target(client [pid]/server/all).\n");
-				_wl_tbm_dump_usage();
-				return 0;
-			}
-		} else if (!strncmp(argv[2], "unregister", strlen(argv[2]) + 1)) {
-			if (argc < 4) {
-				WL_TBM_LOG("error: no pid. please type the target(client [pid]/server/all).\n");
-				_wl_tbm_dump_usage();
-				return 0;
-			}
-
-			tbm_monitor->options.trace_command = WL_TBM_MONITOR_DUMP_COMMAND_UNREGISTER;
-			if (!_wl_tbm_select_target_option(tbm_monitor, argc, argv, 3)) {
-				WL_TBM_LOG("error: no pid. please type the target(client [pid]/server/all).\n");
-				_wl_tbm_dump_usage();
-				return 0;
 			}
 		} else {
 			_wl_tbm_dump_usage();

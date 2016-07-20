@@ -66,6 +66,9 @@ struct wayland_tbm_server {
 
 	struct wl_list cqueue_list; /* for scanout buffer */
 	struct wl_list cresource_list; /* for tbm monitor */
+
+	char * path;
+	int queue_dump;
 };
 
 struct wayland_tbm_buffer {
@@ -292,18 +295,29 @@ static const struct wl_tbm_queue_interface _wayland_tbm_queue_impementation = {
 };
 
 static void
-_wayland_tbm_server_dump(struct wayland_tbm_server *tbm_srv, WL_TBM_MONITOR_DUMP_COMMAND cmd, WL_TBM_MONITOR_DUMP_TYPE type)
+_wayland_tbm_server_dump(struct wayland_tbm_server *tbm_srv, WL_TBM_MONITOR_DUMP_COMMAND cmd)
 {
 	if (cmd == WL_TBM_MONITOR_DUMP_COMMAND_SNAPSHOT) {
 		char * path = _wayland_tbm_dump_directory_make();
 		if (path) {
-			tbm_surface_internal_dump_all(path);
+			tbm_bufmgr_debug_dump_all(path);
 			free(path);
 		}
 	} else if (cmd == WL_TBM_MONITOR_DUMP_COMMAND_ON) {
-		WL_TBM_DEBUG("WL_TBM_MONITOR_DUMP_COMMAND_ON isn't implemented yet\n");
+		if (tbm_srv->queue_dump && tbm_srv->path == NULL) {
+			tbm_srv->path = _wayland_tbm_dump_directory_make();
+			if (tbm_srv->path)
+				tbm_bufmgr_debug_queue_dump(tbm_srv->path, 20, 1);
+		}
 	} else if (cmd == WL_TBM_MONITOR_DUMP_COMMAND_OFF) {
-		WL_TBM_DEBUG("WL_TBM_MONITOR_DUMP_COMMAND_OFF isn't implemented yet\n");
+		if (tbm_srv->path) {
+			tbm_bufmgr_debug_queue_dump(NULL, 0, 0);
+			free(tbm_srv->path);
+			tbm_srv->path = NULL;
+		}
+		tbm_srv->queue_dump = 0;
+	} else if (cmd == WL_TBM_MONITOR_DUMP_COMMAND_QUEUE) {
+		tbm_srv->queue_dump = 1;
 	}
 }
 
@@ -376,7 +390,7 @@ _wayland_tbm_server_impl_request_tbm_monitor(struct wl_client *client,
 			else
 				_change_trace_status(&trace_status, subcommand, tbm_srv->bufmgr);
 		} else if (command == WL_TBM_MONITOR_COMMAND_DUMP) {
-			_wayland_tbm_server_dump(tbm_srv, subcommand & 0xFF, subcommand >> 16 & 0xFF);
+			_wayland_tbm_server_dump(tbm_srv, subcommand);
 		} else
 			wl_resource_post_error(resource, WL_TBM_ERROR_INVALID_FORMAT,
 					       "invalid format");
@@ -423,8 +437,7 @@ _wayland_tbm_server_impl_request_tbm_monitor(struct wl_client *client,
 									  target, pid);
 				}
 			}
-			_wayland_tbm_server_dump(tbm_srv, subcommand & 0xFF, subcommand >> 16 & 0xFF);
-
+			_wayland_tbm_server_dump(tbm_srv, subcommand);
 		} else
 			wl_resource_post_error(resource, WL_TBM_ERROR_INVALID_FORMAT,
 					       "invalid format");

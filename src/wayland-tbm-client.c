@@ -52,6 +52,9 @@ struct wayland_tbm_client {
 
 	WL_TBM_MONITOR_TRACE_STATUS trace_state;
 
+	char * path;
+	int queue_dump;
+
 	struct wl_list queue_info_list;
 };
 
@@ -117,18 +120,29 @@ _wayland_tbm_client_create_surface_from_param(tbm_bufmgr bufmgr,
 			 uint32_t buf2);
 
 static void
-_wayland_tbm_client_dump(struct wayland_tbm_client * tbm_client, WL_TBM_MONITOR_DUMP_COMMAND cmd, WL_TBM_MONITOR_DUMP_TYPE type)
+_wayland_tbm_client_dump(struct wayland_tbm_client * tbm_client, WL_TBM_MONITOR_DUMP_COMMAND cmd)
 {
 	if (cmd == WL_TBM_MONITOR_DUMP_COMMAND_SNAPSHOT) {
 		char * path = _wayland_tbm_dump_directory_make();
 		if (path) {
-			tbm_surface_internal_dump_all(path);
+			tbm_bufmgr_debug_dump_all(path);
 			free(path);
 		}
 	} else if (cmd == WL_TBM_MONITOR_DUMP_COMMAND_ON) {
-		WL_TBM_DEBUG("WL_TBM_MONITOR_DUMP_COMMAND_ON isn't implemented yet\n");
+		if (tbm_client->queue_dump && tbm_client->path == NULL) {
+			tbm_client->path = _wayland_tbm_dump_directory_make();
+			if (tbm_client->path)
+				tbm_bufmgr_debug_queue_dump(tbm_client->path, 20, 1);
+		}
 	} else if (cmd == WL_TBM_MONITOR_DUMP_COMMAND_OFF) {
-		WL_TBM_DEBUG("WL_TBM_MONITOR_DUMP_COMMAND_OFF isn't implemented yet\n");
+		if (tbm_client->path) {
+			tbm_bufmgr_debug_queue_dump(NULL, 0, 0);
+			free(tbm_client->path);
+			tbm_client->path = NULL;
+		}
+		tbm_client->queue_dump = 0;
+	} else if (cmd == WL_TBM_MONITOR_DUMP_COMMAND_QUEUE) {
+		tbm_client->queue_dump = 1;
 	}
 }
 
@@ -177,9 +191,9 @@ handle_tbm_monitor_client_tbm_bo(void *data,
 	} else if (command == WL_TBM_MONITOR_COMMAND_DUMP) {
 		if (target == WL_TBM_MONITOR_TARGET_CLIENT) {
 			if (getpid() == pid)
-				_wayland_tbm_client_dump(tbm_client, subcommand & 0xFF, subcommand >> 16 & 0xFF);
+				_wayland_tbm_client_dump(tbm_client, subcommand);
 		} else if (target == WL_TBM_MONITOR_TARGET_ALL) {
-			_wayland_tbm_client_dump(tbm_client, subcommand & 0xFF, subcommand >> 16 & 0xFF);
+			_wayland_tbm_client_dump(tbm_client, subcommand);
 		} else {
 			WL_TBM_LOG("[%s]: Error target is not available. target = %d\n", __func__,
 				   target);
