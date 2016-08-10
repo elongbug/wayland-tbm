@@ -113,6 +113,8 @@ _wayland_tbm_server_buffer_destory(struct wl_resource *wl_buffer)
 	if (tbm_buffer->destroy_cb)
 		tbm_buffer->destroy_cb(tbm_buffer->surface, tbm_buffer->user_data);
 
+	tbm_surface_internal_set_debug_data(tbm_buffer->surface, "id", NULL);
+
 	tbm_surface_internal_unref(tbm_buffer->surface);
 	free(tbm_buffer);
 }
@@ -387,6 +389,7 @@ _wayland_tbm_server_impl_create_buffer(struct wl_client *client,
 	int bpp;
 	int numPlane;
 	int i;
+	char debug_id[64] = {0, };
 
 	bpp = tbm_surface_internal_get_bpp(format);
 	numPlane = tbm_surface_internal_get_num_planes(format);
@@ -443,6 +446,9 @@ _wayland_tbm_server_impl_create_buffer(struct wl_client *client,
 		return;
 	}
 
+	snprintf(debug_id, sizeof(debug_id), "%u", (unsigned int)wl_resource_get_id(tbm_buffer->wl_buffer));
+	tbm_surface_internal_set_debug_data(surface, "id", debug_id);
+
 #ifdef DEBUG_TRACE
 	pid_t pid = 0; uid_t uid = 0; gid_t gid = 0;
 	wl_client_get_credentials(client, &pid, &uid, &gid);
@@ -471,6 +477,7 @@ _wayland_tbm_server_impl_create_buffer_with_fd(struct wl_client *client,
 	int bpp;
 	int numPlane;
 	int i;
+	char debug_id[64] = {0, };
 
 	bpp = tbm_surface_internal_get_bpp(format);
 	numPlane = tbm_surface_internal_get_num_planes(format);
@@ -526,6 +533,9 @@ _wayland_tbm_server_impl_create_buffer_with_fd(struct wl_client *client,
 		wl_resource_post_no_memory(wl_tbm);
 		return;
 	}
+
+	snprintf(debug_id, sizeof(debug_id), "%u", (unsigned int)wl_resource_get_id(tbm_buffer->wl_buffer));
+	tbm_surface_internal_set_debug_data(surface, "id", debug_id);
 
 #ifdef DEBUG_TRACE
 	pid_t pid = 0; uid_t uid = 0; gid_t gid = 0;
@@ -926,6 +936,7 @@ wayland_tbm_server_client_queue_export_buffer(struct wayland_tbm_client_queue *c
 	struct wl_resource *wl_tbm = NULL;
 	struct wayland_tbm_buffer *tbm_buffer = NULL;
 	struct wl_client *client = NULL;
+	char debug_id[64] = {0, };
 
 	WL_TBM_RETURN_VAL_IF_FAIL(cqueue != NULL, NULL);
 	WL_TBM_RETURN_VAL_IF_FAIL(cqueue->wl_tbm_queue != NULL, NULL);
@@ -950,6 +961,9 @@ wayland_tbm_server_client_queue_export_buffer(struct wayland_tbm_client_queue *c
 		tbm_surface_internal_unref(surface);
 		return NULL;
 	}
+
+	snprintf(debug_id, sizeof(debug_id), "%u", (unsigned int)wl_resource_get_id(tbm_buffer->wl_buffer));
+	tbm_surface_internal_set_debug_data(surface, "id", debug_id);
 
 	return tbm_buffer->wl_buffer;
 }

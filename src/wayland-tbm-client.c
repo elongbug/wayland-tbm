@@ -296,6 +296,7 @@ wayland_tbm_client_create_buffer(struct wayland_tbm_client *tbm_client,
 	uint32_t flags = 0;
 	struct wayland_tbm_buffer *buffer, *tmp;
 	struct wayland_tbm_surface_queue *queue_info = NULL, *tmp_info = NULL;
+	char debug_id[64] = {0, };
 
 	/* if the surface is the attached surface from display server,
 	* return the wl_buffer of the attached surface
@@ -390,7 +391,10 @@ wayland_tbm_client_create_buffer(struct wayland_tbm_client *tbm_client,
 			close(bufs[i]);
 	}
 
-    wl_buffer_set_user_data(wl_buffer, surface);
+	wl_buffer_set_user_data(wl_buffer, surface);
+
+	snprintf(debug_id, sizeof(debug_id), "%u", (unsigned int)wl_proxy_get_id((struct wl_proxy *)wl_buffer));
+	tbm_surface_internal_set_debug_data(surface, "id", debug_id);
 
 #ifdef DEBUG_TRACE
 	WL_TBM_TRACE("        pid:%d wl_buffer:%p tbm_surface:%p\n", getpid(), wl_buffer, surface);
@@ -414,11 +418,17 @@ wayland_tbm_client_destroy_buffer(struct wayland_tbm_client *tbm_client,
 	WL_TBM_RETURN_IF_FAIL(tbm_client != NULL);
 	WL_TBM_RETURN_IF_FAIL(wl_buffer != NULL);
 
+	tbm_surface_h surface = NULL;
+
 	// TODO: valid check if the buffer is from this tbm_client???
 
 #ifdef DEBUG_TRACE
 	WL_TBM_TRACE("       pid:%d wl_buffer:%p\n", getpid(), wl_buffer);
 #endif
+
+	surface = wl_buffer_get_user_data(wl_buffer);
+	if (surface)
+		tbm_surface_internal_set_debug_data(surface, "id", NULL);
 
 	wl_buffer_set_user_data(wl_buffer, NULL);
 	wl_buffer_destroy(wl_buffer);
@@ -703,6 +713,7 @@ handle_tbm_queue_buffer_attached_with_id(void *data,
 {
 	struct wayland_tbm_surface_queue *queue_info = data;
 	struct wayland_tbm_buffer *buffer;
+	char debug_id[64] = {0, };
 
 	buffer = calloc(1, sizeof(struct wayland_tbm_buffer));
 	wl_list_init(&buffer->link);
@@ -727,6 +738,9 @@ handle_tbm_queue_buffer_attached_with_id(void *data,
 
 	wl_proxy_set_queue((struct wl_proxy *)buffer->wl_buffer, NULL);
 	wl_list_insert(&queue_info->attach_bufs, &buffer->link);
+
+	snprintf(debug_id, sizeof(debug_id), "%u", (unsigned int)wl_proxy_get_id((struct wl_proxy *)wl_buffer));
+	tbm_surface_internal_set_debug_data(buffer->tbm_surface, "id", debug_id);
 
 #ifdef DEBUG_TRACE
 	WL_TBM_TRACE("pid:%d wl_buffer:%p tbm_surface:%p\n", getpid(), buffer->wl_buffer, buffer->tbm_surface);
@@ -768,6 +782,7 @@ handle_tbm_queue_buffer_attached_with_fd(void *data,
 {
 	struct wayland_tbm_surface_queue *queue_info = data;
 	struct wayland_tbm_buffer *buffer;
+	char debug_id[64] = {0, };
 
 	buffer = calloc(1, sizeof(struct wayland_tbm_buffer));
 	wl_list_init(&buffer->link);
@@ -792,6 +807,9 @@ handle_tbm_queue_buffer_attached_with_fd(void *data,
 
 	wl_proxy_set_queue((struct wl_proxy *)buffer->wl_buffer, NULL);
 	wl_list_insert(&queue_info->attach_bufs, &buffer->link);
+
+	snprintf(debug_id, sizeof(debug_id), "%u", (unsigned int)wl_proxy_get_id((struct wl_proxy *)wl_buffer));
+	tbm_surface_internal_set_debug_data(buffer->tbm_surface, "id", debug_id);
 
 #ifdef DEBUG_TRACE
 	WL_TBM_TRACE("pid:%d wl_buffer:%p tbm_surface:%p\n", getpid(), buffer->wl_buffer, buffer->tbm_surface);
