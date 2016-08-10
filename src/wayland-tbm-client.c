@@ -588,9 +588,6 @@ __wayland_tbm_client_surface_alloc_cb(tbm_surface_queue_h surface_queue, void *d
 			}
 		}
 
-		if (!surface)
-			WL_TBM_C_LOG("Error no available attached buffers\n");
-
 	} else {
 		int width = tbm_surface_queue_get_width(queue_info->tbm_queue);
 		int height = tbm_surface_queue_get_height(queue_info->tbm_queue);
