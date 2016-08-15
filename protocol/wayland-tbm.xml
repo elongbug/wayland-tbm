@@ -99,6 +99,50 @@
       <arg name="surface_queue" type="new_id" interface="wl_tbm_queue"/>
       <arg name="surface" type="object" interface="wl_surface"/>
     </request>
+
+    <event name="buffer_import_with_id">
+      <arg name="wl_buffer" type="new_id" interface="wl_buffer"/>
+      <arg name="width" type="int"/>
+      <arg name="height" type="int"/>
+      <arg name="format" type="uint"/>
+      <arg name="num_plane" type="int"/>
+      <arg name="buf_idx0" type="int"/>
+      <arg name="offset0" type="int"/>
+      <arg name="stride0" type="int"/>
+      <arg name="buf_idx1" type="int"/>
+      <arg name="offset1" type="int"/>
+      <arg name="stride1" type="int"/>
+      <arg name="buf_idx2" type="int"/>
+      <arg name="offset2" type="int"/>
+      <arg name="stride2" type="int"/>
+      <arg name="flags" type="uint"/>
+      <arg name="num_buf" type="int"/>
+      <arg name="buf0"	type="uint"/>
+      <arg name="buf1"	type="uint"/>
+      <arg name="buf2"	type="uint"/>
+    </event>
+
+    <event name="buffer_import_with_fd">
+      <arg name="wl_buffer" type="new_id" interface="wl_buffer"/>
+      <arg name="width" type="int"/>
+      <arg name="height" type="int"/>
+      <arg name="format" type="uint"/>
+      <arg name="num_plane" type="int"/>
+      <arg name="buf_idx0" type="int"/>
+      <arg name="offset0" type="int"/>
+      <arg name="stride0" type="int"/>
+      <arg name="buf_idx1" type="int"/>
+      <arg name="offset1" type="int"/>
+      <arg name="stride1" type="int"/>
+      <arg name="buf_idx2" type="int"/>
+      <arg name="offset2" type="int"/>
+      <arg name="stride2" type="int"/>
+      <arg name="flags" type="uint"/>
+      <arg name="num_buf" type="int"/>
+      <arg name="buf0"	type="fd"/>
+      <arg name="buf1"	type="fd"/>
+      <arg name="buf2"	type="fd"/>
+    </event>
   </interface>
 
   <interface name="wl_tbm_queue" version="1">
@@ -151,6 +195,12 @@
       <arg name="buf1"	type="fd"/>
       <arg name="buf2"	type="fd"/>
     </event>
+
+    <event name="buffer_attached_with_imported">
+      <arg name="id" type="object" interface="wl_buffer"/>
+      <arg name="flags" type="uint"/>
+    </event>
+
     <event name="active">
       <arg name="usage" type="uint"/>
     </event>

@@ -827,7 +827,6 @@ _wayland_tbm_server_wl_tbm_queue_send_surface(struct wayland_tbm_client_queue *c
 					struct wl_resource *wl_buffer, tbm_surface_h surface,
 					uint32_t flags)
 {
-	struct wl_resource *wl_tbm_queue = cqueue->wl_tbm_queue;
 	tbm_surface_info_s info;
 	int num_buf;
 	int bufs[TBM_SURF_PLANE_MAX] = { -1, -1, -1, -1};
@@ -883,7 +882,7 @@ _wayland_tbm_server_wl_tbm_queue_send_surface(struct wayland_tbm_client_queue *c
 	}
 
 	if (is_fd == 1)
-		wl_tbm_queue_send_buffer_attached_with_fd(wl_tbm_queue,
+		wl_tbm_send_buffer_import_with_fd(cqueue->wl_tbm,
 				wl_buffer,
 				info.width, info.height, info.format, info.num_planes,
 				tbm_surface_internal_get_plane_bo_idx(surface, 0),
@@ -896,7 +895,7 @@ _wayland_tbm_server_wl_tbm_queue_send_surface(struct wayland_tbm_client_queue *c
 				(bufs[1] == -1) ? bufs[0] : bufs[1],
 				(bufs[2] == -1) ? bufs[0] : bufs[2]);
 	else
-		wl_tbm_queue_send_buffer_attached_with_id(wl_tbm_queue,
+		wl_tbm_send_buffer_import_with_id(cqueue->wl_tbm,
 				wl_buffer,
 				info.width, info.height, info.format, info.num_planes,
 				tbm_surface_internal_get_plane_bo_idx(surface, 0),
@@ -909,6 +908,8 @@ _wayland_tbm_server_wl_tbm_queue_send_surface(struct wayland_tbm_client_queue *c
 				(bufs[1] == -1) ? bufs[0] : bufs[1],
 				(bufs[2] == -1) ? bufs[0] : bufs[2]);
 
+	wl_tbm_queue_send_buffer_attached_with_imported(cqueue->wl_tbm_queue,
+				wl_buffer, flags);
 
 	for (i = 0; i < TBM_SURF_PLANE_MAX; i++) {
 		if (is_fd == 1 && (bufs[i] >= 0))
