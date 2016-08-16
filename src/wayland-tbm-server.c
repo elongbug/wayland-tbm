@@ -899,7 +899,7 @@ _wayland_tbm_server_wl_tbm_queue_send_surface(struct wayland_tbm_client_queue *c
 				(bufs[1] == -1) ? bufs[0] : bufs[1],
 				(bufs[2] == -1) ? bufs[0] : bufs[2]);
 	else
-		wl_tbm_queue_send_buffer_attached_with_fd(wl_tbm_queue,
+		wl_tbm_queue_send_buffer_attached_with_id(wl_tbm_queue,
 				wl_buffer,
 				info.width, info.height, info.format, info.num_planes,
 				tbm_surface_internal_get_plane_bo_idx(surface, 0),
