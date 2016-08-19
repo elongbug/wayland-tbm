@@ -576,6 +576,14 @@ wayland_tbm_client_get_bufmgr(struct wayland_tbm_client *tbm_client)
 }
 
 struct wl_tbm *
+wayland_tbm_client_get_wl_tbm(struct wayland_tbm_client *tbm_client)
+{
+	WL_TBM_RETURN_VAL_IF_FAIL(tbm_client != NULL, NULL);
+
+	return tbm_client->wl_tbm;
+}
+
+struct wl_tbm *
 _wayland_tbm_client_get_wl_tbm(struct wayland_tbm_client *tbm_client)
 {
 	WL_TBM_RETURN_VAL_IF_FAIL(tbm_client != NULL, NULL);
@@ -820,144 +828,7 @@ handle_tbm_queue_info(void *data,
 }
 
 static void
-handle_tbm_queue_buffer_attached_with_id(void *data,
-		struct wl_tbm_queue *wl_tbm_queue,
-		struct wl_buffer *wl_buffer,
-		int32_t width,
-		int32_t height,
-		uint32_t format,
-		int32_t num_plane,
-		int32_t buf_idx0,
-		int32_t offset0,
-		int32_t stride0,
-		int32_t buf_idx1,
-		int32_t offset1,
-		int32_t stride1,
-		int32_t buf_idx2,
-		int32_t offset2,
-		int32_t stride2,
-		uint32_t flags,
-		int32_t num_buf,
-		uint32_t buf0,
-		uint32_t buf1,
-		uint32_t buf2)
-{
-	struct wayland_tbm_surface_queue *queue_info = data;
-	struct wayland_tbm_buffer *buffer;
-	char debug_id[64] = {0, };
-
-	buffer = calloc(1, sizeof(struct wayland_tbm_buffer));
-	wl_list_init(&buffer->link);
-
-	buffer->wl_tbm_queue = wl_tbm_queue;
-	buffer->wl_buffer = wl_buffer;
-	buffer->allocated = 0;
-
-	WL_TBM_GOTO_IF_FAIL(buffer->wl_buffer != NULL, fail);
-
-	buffer->tbm_surface = _wayland_tbm_client_create_surface_from_param(queue_info->bufmgr, 0,
-			      width, height, format,
-			      num_plane,
-			      buf_idx0, offset0, stride0,
-			      buf_idx1, offset1, stride1,
-			      buf_idx2, offset2, stride2,
-			      queue_info->flag,
-			      num_buf,
-			      buf0, buf1, buf2);
-	WL_TBM_GOTO_IF_FAIL(buffer->tbm_surface != NULL, fail);
-	buffer->flags = flags;
-
-	wl_proxy_set_queue((struct wl_proxy *)buffer->wl_buffer, NULL);
-	wl_list_insert(&queue_info->attach_bufs, &buffer->link);
-
-	snprintf(debug_id, sizeof(debug_id), "%u", (unsigned int)wl_proxy_get_id((struct wl_proxy *)wl_buffer));
-	tbm_surface_internal_set_debug_data(buffer->tbm_surface, "id", debug_id);
-
-#ifdef DEBUG_TRACE
-	WL_TBM_TRACE("pid:%d wl_buffer:%p tbm_surface:%p\n", getpid(), buffer->wl_buffer, buffer->tbm_surface);
-#endif
-
-	return;
-
-fail:
-	if (buffer->wl_buffer)
-		wl_buffer_destroy(buffer->wl_buffer);
-
-	if (buffer->tbm_surface)
-		tbm_surface_destroy(buffer->tbm_surface);
-	free(buffer);
-}
-
-static void
-handle_tbm_queue_buffer_attached_with_fd(void *data,
-		struct wl_tbm_queue *wl_tbm_queue,
-		struct wl_buffer *wl_buffer,
-		int32_t width,
-		int32_t height,
-		uint32_t format,
-		int32_t num_plane,
-		int32_t buf_idx0,
-		int32_t offset0,
-		int32_t stride0,
-		int32_t buf_idx1,
-		int32_t offset1,
-		int32_t stride1,
-		int32_t buf_idx2,
-		int32_t offset2,
-		int32_t stride2,
-		uint32_t flags,
-		int32_t num_buf,
-		int32_t buf0,
-		int32_t buf1,
-		int32_t buf2)
-{
-	struct wayland_tbm_surface_queue *queue_info = data;
-	struct wayland_tbm_buffer *buffer;
-	char debug_id[64] = {0, };
-
-	buffer = calloc(1, sizeof(struct wayland_tbm_buffer));
-	wl_list_init(&buffer->link);
-
-	buffer->wl_tbm_queue = wl_tbm_queue;
-	buffer->wl_buffer = wl_buffer;
-	buffer->allocated = 0;
-
-	WL_TBM_GOTO_IF_FAIL(buffer->wl_buffer != NULL, fail);
-
-	buffer->tbm_surface = _wayland_tbm_client_create_surface_from_param(queue_info->bufmgr, 1,
-			      width, height, format,
-			      num_plane,
-			      buf_idx0, offset0, stride0,
-			      buf_idx1, offset1, stride1,
-			      buf_idx2, offset2, stride2,
-			      queue_info->flag,
-			      num_buf,
-			      buf0, buf1, buf2);
-	WL_TBM_GOTO_IF_FAIL(buffer->tbm_surface != NULL, fail);
-	buffer->flags = flags;
-
-	wl_proxy_set_queue((struct wl_proxy *)buffer->wl_buffer, NULL);
-	wl_list_insert(&queue_info->attach_bufs, &buffer->link);
-
-	snprintf(debug_id, sizeof(debug_id), "%u", (unsigned int)wl_proxy_get_id((struct wl_proxy *)wl_buffer));
-	tbm_surface_internal_set_debug_data(buffer->tbm_surface, "id", debug_id);
-
-#ifdef DEBUG_TRACE
-	WL_TBM_TRACE("pid:%d wl_buffer:%p tbm_surface:%p\n", getpid(), buffer->wl_buffer, buffer->tbm_surface);
-#endif
-
-	return;
-fail:
-	if (buffer->wl_buffer)
-		wl_buffer_destroy(buffer->wl_buffer);
-
-	if (buffer->tbm_surface)
-		tbm_surface_destroy(buffer->tbm_surface);
-	free(buffer);
-}
-
-static void
-handle_tbm_queue_buffer_attached_with_imported(void *data,
+handle_tbm_queue_buffer_attached(void *data,
 		struct wl_tbm_queue *wl_tbm_queue,
 		struct wl_buffer *wl_buffer,
 		uint32_t flags)
@@ -1061,9 +932,7 @@ handle_tbm_queue_flush(void *data,
 
 const struct wl_tbm_queue_listener wl_tbm_queue_listener = {
 	handle_tbm_queue_info,
-	handle_tbm_queue_buffer_attached_with_id,
-	handle_tbm_queue_buffer_attached_with_fd,
-	handle_tbm_queue_buffer_attached_with_imported,
+	handle_tbm_queue_buffer_attached,
 	handle_tbm_queue_active,
 	handle_tbm_queue_deactive,
 	handle_tbm_queue_flush

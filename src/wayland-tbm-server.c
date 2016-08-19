@@ -142,6 +142,7 @@ _wayland_tbm_server_tbm_buffer_create(struct wl_resource *wl_tbm,
 	struct wayland_tbm_server *tbm_srv = wl_resource_get_user_data(wl_tbm);
 	struct wayland_tbm_client_resource *c_res = NULL, *tmp_res = NULL;
 	struct wayland_tbm_buffer *tbm_buffer;
+	struct wl_client *wl_client;
 
 	tbm_buffer = calloc(1, sizeof * tbm_buffer);
 	if (tbm_buffer == NULL) {
@@ -149,8 +150,10 @@ _wayland_tbm_server_tbm_buffer_create(struct wl_resource *wl_tbm,
 		return NULL;
 	}
 
+	wl_client = wl_resource_get_client(wl_tbm);
+
 	/* create a wl_buffer resource */
-	tbm_buffer->wl_buffer = wl_resource_create(client, &wl_buffer_interface, 1, id);
+	tbm_buffer->wl_buffer = wl_resource_create(wl_client, &wl_buffer_interface, 1, id);
 	if (!tbm_buffer->wl_buffer) {
 		WL_TBM_S_LOG("Error. fail to create wl_buffer resource.\n");
 		free(tbm_buffer);
@@ -163,7 +166,7 @@ _wayland_tbm_server_tbm_buffer_create(struct wl_resource *wl_tbm,
 
 	tbm_buffer->flags = flags;
 	tbm_buffer->surface = surface;
-	tbm_buffer->client = client;
+	tbm_buffer->client = wl_client;
 
 	/* set the debug_pid to the surface for debugging */
 	if (!wl_list_empty(&tbm_srv->cresource_list)) {
@@ -664,6 +667,106 @@ _wayland_tbm_server_bind_cb(struct wl_client *client, void *data,
 	wl_list_insert(&tbm_srv->cresource_list, &c_res->link);
 }
 
+int
+_wayland_tbm_server_export_surface(struct wl_resource *wl_tbm,
+					struct wl_resource *wl_buffer, tbm_surface_h surface)
+{
+	tbm_surface_info_s info;
+	int num_buf;
+	int bufs[TBM_SURF_PLANE_MAX] = { -1, -1, -1, -1};
+	int flag;
+	int is_fd = -1;
+	int ret = -1, i;
+
+	ret = tbm_surface_get_info(surface, &info);
+	if (ret != TBM_SURFACE_ERROR_NONE) {
+		WL_TBM_S_LOG("Failed to create buffer from surface\n");
+		return 0;
+	}
+
+	if (info.num_planes > 3) {
+		WL_TBM_S_LOG("invalid num_planes(%d)\n", info.num_planes);
+		return 0;
+	}
+
+	num_buf = tbm_surface_internal_get_num_bos(surface);
+	if (num_buf == 0) {
+		WL_TBM_S_LOG("surface doesn't have any bo.\n");
+		goto err;
+	}
+
+	flag = tbm_bo_get_flags(tbm_surface_internal_get_bo(surface, 0));
+
+	for (i = 0; i < num_buf; i++) {
+		tbm_bo bo = tbm_surface_internal_get_bo(surface, i);
+		if (bo == NULL) {
+			goto err;
+		}
+
+		/* try to get fd first */
+		if (is_fd == -1 || is_fd == 1) {
+			bufs[i] = tbm_bo_export_fd(bo);
+			if (bufs[i] >= 0)
+				is_fd = 1;
+		}
+
+		/* if fail to get fd, try to get name second */
+		if (is_fd == -1 || is_fd == 0) {
+			bufs[i] = tbm_bo_export(bo);
+			if (bufs[i] > 0)
+				is_fd = 0;
+		}
+
+		if (is_fd == -1 ||
+		    (is_fd == 1 && bufs[i] < 0) ||
+		    (is_fd == 0 && bufs[i] <= 0)) {
+			WL_TBM_S_LOG("Failed to export(is_fd:%d, bufs:%d)\n", is_fd, bufs[i]);
+			goto err;
+		}
+	}
+
+	if (is_fd == 1)
+		wl_tbm_send_buffer_import_with_fd(wl_tbm,
+				wl_buffer,
+				info.width, info.height, info.format, info.num_planes,
+				tbm_surface_internal_get_plane_bo_idx(surface, 0),
+				info.planes[0].offset, info.planes[0].stride,
+				tbm_surface_internal_get_plane_bo_idx(surface, 1),
+				info.planes[1].offset, info.planes[1].stride,
+				tbm_surface_internal_get_plane_bo_idx(surface, 2),
+				info.planes[2].offset, info.planes[2].stride,
+				flag, num_buf, bufs[0],
+				(bufs[1] == -1) ? bufs[0] : bufs[1],
+				(bufs[2] == -1) ? bufs[0] : bufs[2]);
+	else
+		wl_tbm_send_buffer_import_with_id(wl_tbm,
+				wl_buffer,
+				info.width, info.height, info.format, info.num_planes,
+				tbm_surface_internal_get_plane_bo_idx(surface, 0),
+				info.planes[0].offset, info.planes[0].stride,
+				tbm_surface_internal_get_plane_bo_idx(surface, 1),
+				info.planes[1].offset, info.planes[1].stride,
+				tbm_surface_internal_get_plane_bo_idx(surface, 2),
+				info.planes[2].offset, info.planes[2].stride,
+				flag, num_buf, bufs[0],
+				(bufs[1] == -1) ? bufs[0] : bufs[1],
+				(bufs[2] == -1) ? bufs[0] : bufs[2]);
+
+	for (i = 0; i < TBM_SURF_PLANE_MAX; i++) {
+		if (is_fd == 1 && (bufs[i] >= 0))
+			close(bufs[i]);
+	}
+
+	return 1;
+err:
+	for (i = 0; i < TBM_SURF_PLANE_MAX; i++) {
+		if (is_fd == 1 && (bufs[i] >= 0))
+			close(bufs[i]);
+	}
+
+	return 0;
+}
+
 struct wayland_tbm_server *
 wayland_tbm_server_init(struct wl_display *display, const char *device_name,
 			int fd,
@@ -769,6 +872,36 @@ wayland_tbm_server_get_buffer_flags(struct wayland_tbm_server *tbm_srv,
 	return 0;
 }
 
+struct wl_resource *
+wayland_tbm_server_export_buffer(struct wl_resource *wl_tbm, tbm_surface_h surface)
+{
+	struct wayland_tbm_buffer *tbm_buffer = NULL;
+	char debug_id[64] = {0, };
+
+	WL_TBM_RETURN_VAL_IF_FAIL(wl_tbm != NULL, NULL);
+	WL_TBM_RETURN_VAL_IF_FAIL(surface != NULL, NULL);
+
+	tbm_surface_internal_ref(surface);
+	tbm_buffer = _wayland_tbm_server_tbm_buffer_create(wl_tbm, 0, surface, 0, 0);
+	if (tbm_buffer == NULL) {
+		tbm_surface_internal_unref(surface);
+		return NULL;
+	}
+
+	if(!_wayland_tbm_server_export_surface(wl_tbm,
+				tbm_buffer->wl_buffer, surface)) {
+		WL_TBM_S_LOG("Failed to send the surface to the wl_tbm_queue\n");
+		wl_resource_destroy(tbm_buffer->wl_buffer);
+		tbm_surface_internal_unref(surface);
+		return NULL;
+	}
+
+	snprintf(debug_id, sizeof(debug_id), "%u", (unsigned int)wl_resource_get_id(tbm_buffer->wl_buffer));
+	tbm_surface_internal_set_debug_data(surface, "id", debug_id);
+
+	return tbm_buffer->wl_buffer;
+}
+
 struct wayland_tbm_client_queue *
 wayland_tbm_server_client_queue_get(struct wayland_tbm_server *tbm_srv, struct wl_resource *wl_surface)
 {
@@ -822,110 +955,6 @@ wayland_tbm_server_client_queue_flush(struct wayland_tbm_client_queue *cqueue)
 	wl_tbm_queue_send_flush(cqueue->wl_tbm_queue);
 }
 
-int
-_wayland_tbm_server_wl_tbm_queue_send_surface(struct wayland_tbm_client_queue *cqueue,
-					struct wl_resource *wl_buffer, tbm_surface_h surface,
-					uint32_t flags)
-{
-	tbm_surface_info_s info;
-	int num_buf;
-	int bufs[TBM_SURF_PLANE_MAX] = { -1, -1, -1, -1};
-	int is_fd = -1;
-	int ret = -1, i;
-
-	ret = tbm_surface_get_info(surface, &info);
-	if (ret != TBM_SURFACE_ERROR_NONE) {
-		WL_TBM_S_LOG("Failed to create buffer from surface\n");
-		return 0;
-	}
-
-	if (info.num_planes > 3) {
-		WL_TBM_S_LOG("invalid num_planes(%d)\n", info.num_planes);
-		return 0;
-	}
-
-	num_buf = tbm_surface_internal_get_num_bos(surface);
-	if (num_buf == 0) {
-		WL_TBM_S_LOG("surface doesn't have any bo.\n");
-		goto err;
-	}
-
-	for (i = 0; i < num_buf; i++) {
-		tbm_bo bo = tbm_surface_internal_get_bo(surface, i);
-		if (bo == NULL)
-			goto err;
-
-#ifdef DEBUG_TRACE
-		WL_TBM_TRACE(" pid:%d tbm_surface:%p name:%d\n", cqueue->pid, surface, tbm_bo_export(bo));
-#endif
-
-		/* try to get fd first */
-		if (is_fd == -1 || is_fd == 1) {
-			bufs[i] = tbm_bo_export_fd(bo);
-			if (bufs[i] >= 0)
-				is_fd = 1;
-		}
-
-		/* if fail to get fd, try to get name second */
-		if (is_fd == -1 || is_fd == 0) {
-			bufs[i] = tbm_bo_export(bo);
-			if (bufs[i] > 0)
-				is_fd = 0;
-		}
-
-		if (is_fd == -1 ||
-		    (is_fd == 1 && bufs[i] < 0) ||
-		    (is_fd == 0 && bufs[i] <= 0)) {
-			WL_TBM_S_LOG("Failed to export(is_fd:%d, bufs:%d)\n", is_fd, bufs[i]);
-			goto err;
-		}
-	}
-
-	if (is_fd == 1)
-		wl_tbm_send_buffer_import_with_fd(cqueue->wl_tbm,
-				wl_buffer,
-				info.width, info.height, info.format, info.num_planes,
-				tbm_surface_internal_get_plane_bo_idx(surface, 0),
-				info.planes[0].offset, info.planes[0].stride,
-				tbm_surface_internal_get_plane_bo_idx(surface, 1),
-				info.planes[1].offset, info.planes[1].stride,
-				tbm_surface_internal_get_plane_bo_idx(surface, 2),
-				info.planes[2].offset, info.planes[2].stride,
-				flags, num_buf, bufs[0],
-				(bufs[1] == -1) ? bufs[0] : bufs[1],
-				(bufs[2] == -1) ? bufs[0] : bufs[2]);
-	else
-		wl_tbm_send_buffer_import_with_id(cqueue->wl_tbm,
-				wl_buffer,
-				info.width, info.height, info.format, info.num_planes,
-				tbm_surface_internal_get_plane_bo_idx(surface, 0),
-				info.planes[0].offset, info.planes[0].stride,
-				tbm_surface_internal_get_plane_bo_idx(surface, 1),
-				info.planes[1].offset, info.planes[1].stride,
-				tbm_surface_internal_get_plane_bo_idx(surface, 2),
-				info.planes[2].offset, info.planes[2].stride,
-				flags, num_buf, bufs[0],
-				(bufs[1] == -1) ? bufs[0] : bufs[1],
-				(bufs[2] == -1) ? bufs[0] : bufs[2]);
-
-	wl_tbm_queue_send_buffer_attached_with_imported(cqueue->wl_tbm_queue,
-				wl_buffer, flags);
-
-	for (i = 0; i < TBM_SURF_PLANE_MAX; i++) {
-		if (is_fd == 1 && (bufs[i] >= 0))
-			close(bufs[i]);
-	}
-
-	return 1;
-err:
-	for (i = 0; i < TBM_SURF_PLANE_MAX; i++) {
-		if (is_fd == 1 && (bufs[i] >= 0))
-			close(bufs[i]);
-	}
-
-	return 0;
-}
-
 struct wl_resource *
 wayland_tbm_server_client_queue_export_buffer(struct wayland_tbm_client_queue *cqueue,
 			tbm_surface_h surface, uint32_t flags,
@@ -933,7 +962,6 @@ wayland_tbm_server_client_queue_export_buffer(struct wayland_tbm_client_queue *c
 {
 	struct wl_resource *wl_tbm = NULL;
 	struct wayland_tbm_buffer *tbm_buffer = NULL;
-	struct wl_client *client = NULL;
 	char debug_id[64] = {0, };
 
 	WL_TBM_RETURN_VAL_IF_FAIL(cqueue != NULL, NULL);
@@ -941,24 +969,26 @@ wayland_tbm_server_client_queue_export_buffer(struct wayland_tbm_client_queue *c
 	WL_TBM_RETURN_VAL_IF_FAIL(surface != NULL, NULL);
 
 	wl_tbm = cqueue->wl_tbm;
-	client = wl_resource_get_client(cqueue->wl_tbm_queue);
 
 	tbm_surface_internal_ref(surface);
-	tbm_buffer = _wayland_tbm_server_tbm_buffer_create(wl_tbm, client, surface, 0, flags);
+	tbm_buffer = _wayland_tbm_server_tbm_buffer_create(wl_tbm, 0, surface, 0, 0);
 	if (tbm_buffer == NULL) {
 		tbm_surface_internal_unref(surface);
 		return NULL;
 	}
 	tbm_buffer->destroy_cb = destroy_cb;
 	tbm_buffer->user_data = user_data;
+	tbm_buffer->flags = flags;
 
-	if (!_wayland_tbm_server_wl_tbm_queue_send_surface(cqueue,
-				tbm_buffer->wl_buffer, surface, flags)) {
+	if(!_wayland_tbm_server_export_surface(cqueue->wl_tbm,
+				tbm_buffer->wl_buffer, surface)) {
 		WL_TBM_S_LOG("Failed to send the surface to the wl_tbm_queue\n");
 		wl_resource_destroy(tbm_buffer->wl_buffer);
 		tbm_surface_internal_unref(surface);
 		return NULL;
 	}
+
+	wl_tbm_queue_send_buffer_attached(cqueue->wl_tbm_queue, tbm_buffer->wl_buffer, flags);
 
 	snprintf(debug_id, sizeof(debug_id), "%u", (unsigned int)wl_resource_get_id(tbm_buffer->wl_buffer));
 	tbm_surface_internal_set_debug_data(surface, "id", debug_id);
