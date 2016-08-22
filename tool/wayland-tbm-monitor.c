@@ -365,9 +365,8 @@ main(int argc, char *argv[])
 	WL_TBM_RETURN_VAL_IF_FAIL(tbm_monitor != NULL, -1);
 
 	ret = _wl_tbm_monitor_process_options(tbm_monitor, argc, argv);
-	if (!ret) {
+	if (!ret)
 		goto finish;
-	}
 
 	tbm_monitor->dpy = wl_display_connect(NULL);
 	WL_TBM_GOTO_IF_FAIL(tbm_monitor->dpy != NULL, finish);

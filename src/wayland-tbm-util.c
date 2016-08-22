@@ -143,7 +143,7 @@ _wayland_tbm_check_dlog_enable(void)
 		bDlog = 0;
 	}
 #endif
-    return;
+	return;
 }
 
 char *

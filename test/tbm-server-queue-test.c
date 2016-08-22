@@ -12,7 +12,7 @@
 
 #include "wayland-tbm-test-server-protocol.h"
 
-#define SERVER_LOG(fmt, ...)   fprintf (stderr, "[SERVER(%d):%s] " fmt, getpid(), __func__, ##__VA_ARGS__)
+#define SERVER_LOG(fmt, ...)   fprintf(stderr, "[SERVER(%d):%s] " fmt, getpid(), __func__, ##__VA_ARGS__)
 
 #define NUM_SCANOUT_BUFFER 3
 #define SCANOUT_BUFFER	0xFF30
@@ -104,9 +104,8 @@ _wl_test_surface_attach_cb(struct wl_client *client,
 						    wl_tbm_test_idle_cb, app);
 	}
 
-	if (old_wl_buffer) {
+	if (old_wl_buffer)
 		wl_buffer_send_release(old_wl_buffer);
-	}
 }
 
 static void
@@ -208,9 +207,8 @@ wl_tbm_test_update_timer_cb(void *data)
 	app->need_update = 0;
 
 	SERVER_LOG("VSYNC, PageFlipComplete~\n");
-	if (app->front) {
+	if (app->front)
 		tbm_surface_queue_release(app->scanout_queue, app->front);
-	}
 
 	app->front = app->back;
 	app->back = NULL;
@@ -271,11 +269,10 @@ wl_tbm_test_idle_cb(void *data)
 		flags = wayland_tbm_server_get_flags(NULL, app_surface->update_buffer);
 
 		SERVER_LOG("Composite %p buffer:%p\n", app_surface, app_surface->update_buffer);
-		if (flags == SCANOUT_BUFFER) {
+		if (flags == SCANOUT_BUFFER)
 			tbm_surface_queue_release(app->scanout_queue, buffer);
-		} else {
+		else
 			wl_buffer_send_release(app_surface->update_buffer);
-		}
 
 		app_surface->update_buffer = NULL;
 		app_surface->need_frame_done = 1;

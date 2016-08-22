@@ -24,9 +24,8 @@ _connect_remote(int argc, char *argv[])
 	}
 
 	dpy = wl_display_connect(dpy_name);
-	if (!dpy) {
+	if (!dpy)
 		printf("[APP] failed to connect server\n");
-	}
 
 	return dpy;
 }

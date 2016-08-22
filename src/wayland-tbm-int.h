@@ -50,55 +50,55 @@ extern int bDlog;
 #define LOG_TAG "WL_TBM"
 
 #define WL_TBM_C_LOG(fmt, ...) {\
-    if (bDlog) {\
-        LOGE ("[WL_TBM_C] " fmt, ##__VA_ARGS__);\
-    }\
-    else {\
-        fprintf (stderr, "[WL_TBM_C(%d):%s] " fmt, getpid(), __func__, ##__VA_ARGS__);\
-    }\
+	if (bDlog) {\
+		LOGE("[WL_TBM_C] " fmt, ##__VA_ARGS__);\
+	} \
+	else {\
+		fprintf(stderr, "[WL_TBM_C(%d):%s] " fmt, getpid(), __func__, ##__VA_ARGS__);\
+	} \
 }
 #define WL_TBM_S_LOG(fmt, ...) {\
-    if (bDlog) {\
-        LOGE ("[WL_TBM_S] " fmt, ##__VA_ARGS__);\
-    }\
-    else{\
-        fprintf (stderr, "[WL_TBM_S(%d):%s] " fmt, getpid(), __func__, ##__VA_ARGS__);\
-    }\
+	if (bDlog) {\
+		LOGE("[WL_TBM_S] " fmt, ##__VA_ARGS__);\
+	} \
+	else{\
+		fprintf(stderr, "[WL_TBM_S(%d):%s] " fmt, getpid(), __func__, ##__VA_ARGS__);\
+	} \
 }
 #define WL_TBM_LOG(fmt, ...) {\
-    if (bDlog) {\
-        LOGE ("[WL_TBM] " fmt, ##__VA_ARGS__);\
-    }\
-    else {\
-        fprintf (stderr, "[WL_TBM(%d)] " fmt, getpid(), ##__VA_ARGS__);\
-    }\
+	if (bDlog) {\
+		LOGE("[WL_TBM] " fmt, ##__VA_ARGS__);\
+	} \
+	else {\
+		fprintf(stderr, "[WL_TBM(%d)] " fmt, getpid(), ##__VA_ARGS__);\
+	} \
 }
 #else
-#define WL_TBM_C_LOG(fmt, ...)   fprintf (stderr, "[WL_TBM_C(%d):%s] " fmt, getpid(), __func__, ##__VA_ARGS__)
-#define WL_TBM_S_LOG(fmt, ...)   fprintf (stderr, "[WL_TBM_S(%d):%s] " fmt, getpid(), __func__, ##__VA_ARGS__)
-#define WL_TBM_LOG(fmt, ...)     fprintf (stderr, "[WL_TBM(%d)] " fmt, getpid(), ##__VA_ARGS__)
+#define WL_TBM_C_LOG(fmt, ...)   fprintf(stderr, "[WL_TBM_C(%d):%s] " fmt, getpid(), __func__, ##__VA_ARGS__)
+#define WL_TBM_S_LOG(fmt, ...)   fprintf(stderr, "[WL_TBM_S(%d):%s] " fmt, getpid(), __func__, ##__VA_ARGS__)
+#define WL_TBM_LOG(fmt, ...)     fprintf(stderr, "[WL_TBM(%d)] " fmt, getpid(), ##__VA_ARGS__)
 #endif /* ENABLE_DLOG */
 
-#define WL_TBM_DEBUG(fmt, ...)   fprintf (stderr, "[WL_TBM:DEBUG(%d)] " fmt, getpid(), ##__VA_ARGS__)
+#define WL_TBM_DEBUG(fmt, ...)   fprintf(stderr, "[WL_TBM:DEBUG(%d)] " fmt, getpid(), ##__VA_ARGS__)
 
 /* check condition */
 #define WL_TBM_RETURN_IF_FAIL(cond) {\
-    if (!(cond)) {\
-        WL_TBM_LOG ("'%s' failed.\n", #cond);\
-        return;\
-    }\
+	if (!(cond)) {\
+		WL_TBM_LOG("'%s' failed.\n", #cond);\
+		return;\
+	} \
 }
 #define WL_TBM_RETURN_VAL_IF_FAIL(cond, val) {\
-    if (!(cond)) {\
-        WL_TBM_LOG ("'%s' failed.\n", #cond);\
-        return val;\
-    }\
+	if (!(cond)) {\
+		WL_TBM_LOG("'%s' failed.\n", #cond);\
+		return val;\
+	} \
 }
 #define WL_TBM_GOTO_IF_FAIL(cond, dst) {\
-    if (!(cond)) {\
-        WL_TBM_LOG ("'%s' failed.\n", #cond);\
-        goto dst;\
-    }\
+	if (!(cond)) {\
+		WL_TBM_LOG("'%s' failed.\n", #cond);\
+		goto dst;\
+	} \
 }
 
 typedef enum {

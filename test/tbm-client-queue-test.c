@@ -14,7 +14,7 @@
 
 #include "wayland-tbm-test-client-protocol.h"
 
-#define WL_APP_C_LOG(fmt, ...)   fprintf (stderr, "[CLIENT(%d):%s] " fmt, getpid(), __func__, ##__VA_ARGS__)
+#define WL_APP_C_LOG(fmt, ...)   fprintf(stderr, "[CLIENT(%d):%s] " fmt, getpid(), __func__, ##__VA_ARGS__)
 
 typedef struct {
 	struct wayland_tbm_client *tbm_client;
@@ -103,7 +103,7 @@ static const struct wl_buffer_listener buffer_release_listener = {
 };
 
 static void
-_cb_wl_callback_surface_frame_done (void *data,
+_cb_wl_callback_surface_frame_done(void *data,
 				    struct wl_callback *wl_callback,
 				    uint32_t callback_data)
 {
@@ -128,9 +128,8 @@ _drawing_surface(AppInfoClient *app)
 	struct wl_callback *wl_callback;
 
 	app->count++;
-	if (app->count == 10) {
+	if (app->count == 10)
 		app->exit = 1;
-	}
 
 	if (!tbm_surface_queue_can_dequeue(surface_queue, 0)) {
 		WL_APP_C_LOG("Wait free_buffer\n");
@@ -209,15 +208,14 @@ main(int argc, char *argv[])
 	struct wl_display *dpy = NULL;
 	struct wl_registry *registry;
 	const char *dpy_name = NULL;
-	const static char *default_dpy_name = "queue";
+	const char *default_dpy_name = "queue";
 	int ret = 0;
 	tbm_bufmgr bufmgr = NULL;
 
-	if (argc > 1) {
+	if (argc > 1)
 		dpy_name = argv[1];
-	} else {
+	else
 		dpy_name = default_dpy_name;
-	}
 
 	dpy = wl_display_connect(dpy_name);
 	if (!dpy) {

@@ -14,11 +14,11 @@
 
 #include "wayland-tbm-test-client-protocol.h"
 
-#define WL_APP_LOG(fmt, ...)   fprintf (stderr, "[CLIENT(%d):%s] " fmt, getpid(), __func__, ##__VA_ARGS__)
+#define WL_APP_LOG(fmt, ...)   fprintf(stderr, "[CLIENT(%d):%s] " fmt, getpid(), __func__, ##__VA_ARGS__)
 #define WL_APP_CHECK(cond) {\
-    if (!(cond)) {\
-        WL_APP_LOG ("[%s:%d] : '%s' failed.\n", __FUNCTION__,__LINE__, #cond);\
-    }\
+	if (!(cond)) {\
+		WL_APP_LOG("[%s:%d] : '%s' failed.\n", __FUNCTION__, __LINE__, #cond);\
+	} \
 }
 
 typedef struct {
@@ -68,15 +68,14 @@ static int test_06(AppInfoClient* app);
 int
 main(int argc, char *argv[])
 {
+	const char *default_dpy_name = "queue";
 	struct wl_registry *registry;
 	const char *dpy_name = NULL;
-	const static char *default_dpy_name = "queue";
 
-	if (argc > 1) {
+	if (argc > 1)
 		dpy_name = argv[1];
-	} else {
+	else
 		dpy_name = default_dpy_name;
-	}
 
 	gApp.dpy = wl_display_connect(dpy_name);
 	if (!gApp.dpy) {
@@ -109,7 +108,7 @@ main(int argc, char *argv[])
 
 
 finish:
- 	if (gApp.bufmgr) {
+	if (gApp.bufmgr) {
 		tbm_bufmgr_debug_show(gApp.bufmgr);
 		tbm_bufmgr_deinit(gApp.bufmgr);
 	}

@@ -103,11 +103,11 @@ _wayland_tbm_client_dump(struct wayland_tbm_client * tbm_client, WL_TBM_MONITOR_
 			tbm_surface_internal_dump_all(path);
 			free(path);
 		}
-	}
-	else if (cmd == WL_TBM_MONITOR_DUMP_COMMAND_ON)
+	} else if (cmd == WL_TBM_MONITOR_DUMP_COMMAND_ON) {
 		WL_TBM_DEBUG("WL_TBM_MONITOR_DUMP_COMMAND_ON isn't implemented yet\n");
-	else if (cmd == WL_TBM_MONITOR_DUMP_COMMAND_OFF)
+	} else if (cmd == WL_TBM_MONITOR_DUMP_COMMAND_OFF) {
 		WL_TBM_DEBUG("WL_TBM_MONITOR_DUMP_COMMAND_OFF isn't implemented yet\n");
+	}
 }
 
 static void
@@ -302,13 +302,11 @@ wayland_tbm_client_create_buffer(struct wayland_tbm_client *tbm_client,
 	* return the wl_buffer of the attached surface
 	*/
 	if (!wl_list_empty(&tbm_client->queue_info_list)) {
-		wl_list_for_each_safe(queue_info, tmp_info, &tbm_client->queue_info_list, link) {
+		wl_list_for_each_safe(queue_info, tmp_info, &tbm_client->queue_info_list, link)
 			wl_list_for_each_safe(buffer, tmp, &queue_info->attach_bufs, link) {
-				if (buffer->tbm_surface == surface) {
+				if (buffer->tbm_surface == surface)
 					return buffer->wl_buffer;
-				}
 			}
-		}
 	}
 
 	ret = tbm_surface_get_info(surface, &info);
@@ -554,11 +552,10 @@ _wayland_tbm_client_create_surface_from_param(tbm_bufmgr bufmgr,
 
 
 	for (i = 0; i < numName; i++) {
-		if (is_fd) {
+		if (is_fd)
 			bos[i] = tbm_bo_import_fd(bufmgr, names[i]);
-		} else {
+		else
 			bos[i] = tbm_bo_import(bufmgr, names[i]);
-		}
 	}
 	tbm_surface = tbm_surface_internal_create_with_bos(&info, bos, numName);
 	WL_TBM_RETURN_VAL_IF_FAIL(tbm_surface != NULL, NULL);
@@ -569,9 +566,8 @@ _wayland_tbm_client_create_surface_from_param(tbm_bufmgr bufmgr,
 		close(buf2);
 	}
 
-	for (i = 0; i < numName; i++) {
+	for (i = 0; i < numName; i++)
 		tbm_bo_unref(bos[i]);
-	}
 
 	return tbm_surface;
 }
@@ -603,7 +599,7 @@ __wayland_tbm_client_surface_alloc_cb(tbm_surface_queue_h surface_queue, void *d
 		int height = tbm_surface_queue_get_height(queue_info->tbm_queue);
 		int format = tbm_surface_queue_get_format(queue_info->tbm_queue);
 
-        /* ref.. pair of __wayland_tbm_client_surface_free_cb */
+		/* ref.. pair of __wayland_tbm_client_surface_free_cb */
 		surface = tbm_surface_internal_create_with_flags(width,
 							height,
 							format,
@@ -906,9 +902,8 @@ _wayland_tbm_client_find_queue_info_wl_surface(struct wayland_tbm_client *tbm_cl
 	/* set the debug_pid to the surface for debugging */
 	if (!wl_list_empty(&tbm_client->queue_info_list)) {
 		wl_list_for_each_safe(queue_info, tmp_info, &tbm_client->queue_info_list, link) {
-			if (queue_info->wl_surface == surface) {
+			if (queue_info->wl_surface == surface)
 				return queue_info;
-			}
 		}
 	}
 
