@@ -33,6 +33,16 @@
     <request name="set_active_queue">
       <arg name="surface" type="object" interface="wl_test_surface"/>
     </request>
+
+    <!--For remote test -->
+    <request name="set_provider">
+      <arg name="surface" type="object" interface="wl_test_surface"/>
+      <arg name="name" type="string"/>
+    </request>
+    <request name="create_remote_surface">
+      <arg name="surface" type="new_id" interface="wl_test_remote"/>
+      <arg name="name" type="string"/>
+    </request>
   </interface>
 
   <interface name="wl_test_surface" version="1">
@@ -44,5 +54,25 @@
     <request name="frame">
       <arg name="callback" type="new_id" interface="wl_callback"/>
     </request>
+  </interface>
+
+  <interface name="wl_test_remote" version="1">
+    <request name="destroy" type="destructor">
+    </request>
+    <request name="release">
+      <arg name="buffer" type="object" interface="wl_buffer"/>
+    </request>
+    <request name="redirect">
+      <arg name="wl_tbm" type="object" interface="wl_tbm"/>
+    </request>
+    <request name="unredirect">
+    </request>
+    <request name="bind">
+      <arg name="surface" type="object" interface="wl_test_surface"/>
+    </request>
+
+    <event name="update">
+      <arg name="buffer" type="object" interface="wl_buffer"/>
+    </event>
   </interface>
 </protocol>

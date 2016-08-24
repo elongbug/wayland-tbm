@@ -162,8 +162,7 @@ _wl_tbm_test_set_active_surface(struct wl_client *client,
 	AppInfo *app = (AppInfo *)wl_resource_get_user_data(resource);
 	AppSurface *app_surface = (AppSurface *)wl_resource_get_user_data(surface);
 
-	wayland_tbm_server_queue_set_surface(app->server_queue,
-			surface, 0x1111);
+	//wayland_tbm_server_client_queue_activate(app->server_queue, 0x1111);
 	app->active_surface = app_surface;
 
 	SERVER_LOG("Active surface:%p\n", app_surface);
@@ -232,6 +231,7 @@ wl_tbm_test_update_timer_cb(void *data)
 static void
 wl_tbm_test_idle_cb(void *data)
 {
+#if 0	
 	AppInfo *app = data;
 	AppSurface *app_surface, *tmp;
 	tbm_surface_h back = NULL;
@@ -246,7 +246,7 @@ wl_tbm_test_idle_cb(void *data)
 			uint32_t flags;
 			buffer = wayland_tbm_server_get_surface(NULL,
 								app->active_surface->update_buffer);
-			flags = wayland_tbm_server_get_flags(NULL, app->active_surface->update_buffer);
+			flags = wayland_tbm_server_get_buffer_flags(NULL, app->active_surface->update_buffer);
 			if (flags == SCANOUT_BUFFER) {
 				tbm_surface_queue_enqueue(app->scanout_queue, buffer);
 				app->active_surface->update_buffer = NULL;
@@ -266,7 +266,7 @@ wl_tbm_test_idle_cb(void *data)
 			continue;
 
 		buffer = wayland_tbm_server_get_surface(NULL, app_surface->update_buffer);
-		flags = wayland_tbm_server_get_flags(NULL, app_surface->update_buffer);
+		flags = wayland_tbm_server_get_buffer_flags(NULL, app_surface->update_buffer);
 
 		SERVER_LOG("Composite %p buffer:%p\n", app_surface, app_surface->update_buffer);
 		if (flags == SCANOUT_BUFFER)
@@ -291,14 +291,13 @@ present:
 		if (!(app->update_count % 5)) {
 			SERVER_LOG("MODE_CHANGE active:%p\n", app->active_surface);
 			if (app->active_surface) {
-				wayland_tbm_server_queue_set_surface(app->server_queue,
-								     NULL,
+				wayland_tbm_server_client_queue_activate(app->server_queue,
 								     0);
 				app->active_surface = NULL;
 			} else {
 				if (!wl_list_empty(&app->list_surface)) {
 					app_surface = wl_container_of(app->list_surface.next, app_surface, link);
-					if (wayland_tbm_server_queue_set_surface(app->server_queue,
+					if (wayland_tbm_server_client_queue_activate(app->server_queue,
 							app_surface->resource, 1)) {
 						SERVER_LOG("!! ERROR wayland_tbm_server_queue_set_surface\n");
 					} else {
@@ -321,6 +320,7 @@ present:
 		SERVER_LOG("need_update\n");
 		app->need_update = 1;
 	}
+#endif
 }
 
 int
@@ -361,8 +361,6 @@ main(int argc, char *argv[])
 
 	gApp.scanout_queue = tbm_surface_queue_create(NUM_SCANOUT_BUFFER, 100, 100,
 			     TBM_FORMAT_ABGR8888, 0);
-	gApp.server_queue = wayland_tbm_server_create_queue(gApp.tbm_server,
-			    gApp.scanout_queue, SCANOUT_BUFFER);
 
 	tbm_surface_queue_dequeue(gApp.scanout_queue, &init_front);
 	/*TODO : Clear Screen*/

@@ -29,35 +29,65 @@
 
 extern const struct wl_interface wl_buffer_interface;
 extern const struct wl_interface wl_callback_interface;
+extern const struct wl_interface wl_tbm_interface;
+extern const struct wl_interface wl_test_remote_interface;
 extern const struct wl_interface wl_test_surface_interface;
 
 static const struct wl_interface *types[] = {
 	&wl_test_surface_interface,
 	&wl_test_surface_interface,
+	&wl_test_surface_interface,
+	NULL,
+	&wl_test_remote_interface,
+	NULL,
 	&wl_buffer_interface,
 	&wl_callback_interface,
+	&wl_buffer_interface,
+	&wl_tbm_interface,
+	&wl_test_surface_interface,
+	&wl_buffer_interface,
 };
 
 static const struct wl_message wl_tbm_test_requests[] = {
 	{ "create_surface", "n", types + 0 },
 	{ "set_active_queue", "o", types + 1 },
+	{ "set_provider", "os", types + 2 },
+	{ "create_remote_surface", "ns", types + 4 },
 };
 
 WL_EXPORT const struct wl_interface wl_tbm_test_interface = {
 	"wl_tbm_test", 1,
-	2, wl_tbm_test_requests,
+	4, wl_tbm_test_requests,
 	0, NULL,
 };
 
 static const struct wl_message wl_test_surface_requests[] = {
 	{ "destroy", "", types + 0 },
-	{ "attach", "o", types + 2 },
-	{ "frame", "n", types + 3 },
+	{ "attach", "o", types + 6 },
+	{ "frame", "n", types + 7 },
 };
 
 WL_EXPORT const struct wl_interface wl_test_surface_interface = {
-	"wl_surface", 1,
+	"wl_test_surface", 1,
 	3, wl_test_surface_requests,
 	0, NULL,
+};
+
+static const struct wl_message wl_test_remote_requests[] = {
+	{ "destroy", "", types + 0 },
+	{ "release", "o", types + 8 },
+	{ "redirect", "o", types + 9 },
+	{ "unredirect", "", types + 0 },
+	{ "bind", "o", types + 10 },
+};
+
+static const struct wl_message wl_test_remote_events[] = {
+	{ "update", "o", types + 11 },
+};
+
+WL_EXPORT const struct wl_interface wl_test_remote_interface = {
+	"wl_test_remote", 1,
+	5, wl_test_remote_requests,
+	1, wl_test_remote_events,
 };
 

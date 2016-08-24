@@ -70,6 +70,7 @@ struct wayland_tbm_server {
 
 struct wayland_tbm_buffer {
 	struct wl_resource *wl_buffer;
+	struct wl_resource *wl_tbm;
 	tbm_surface_h surface;
 	int flags;
 	struct wl_client *client;
@@ -78,6 +79,7 @@ struct wayland_tbm_buffer {
 	void *user_data;
 
 	struct wl_list link;
+	struct wl_list link_ref;	/*link to same tbm_surface_h*/
 };
 
 struct wayland_tbm_client_resource {
@@ -97,6 +99,53 @@ struct wayland_tbm_client_queue {
 	struct wl_list link;
 };
 
+struct wayland_tbm_user_data {
+	struct wl_list wayland_tbm_buffer_list;
+};
+
+static void
+_wayland_tbm_server_free_user_data(void *user_data)
+{
+	struct wayland_tbm_user_data *ud = user_data;
+
+	//check validation and report
+	if (!wl_list_empty(&ud->wayland_tbm_buffer_list)) {
+		struct wayland_tbm_buffer *pos, *tmp;
+		wl_list_for_each_safe(pos, tmp, &ud->wayland_tbm_buffer_list, link_ref) {
+			WL_TBM_S_LOG("Error: wl_buffer(%p) still alive tbm_surface:%p\n",
+						pos->wl_buffer, pos->surface);
+
+			pos->surface = NULL;
+			wl_list_remove(&pos->link_ref);
+		}
+	}
+
+	free(user_data);
+}
+
+static struct wayland_tbm_user_data *
+_wayland_tbm_server_get_user_data(tbm_surface_h tbm_surface)
+{
+	static const int key_ud;
+	struct wayland_tbm_user_data *ud = NULL;
+
+	tbm_surface_internal_get_user_data(tbm_surface,
+					(unsigned long)&key_ud,
+					(void**)&ud);
+	if (!ud) {
+		ud = calloc(1, sizeof(struct wayland_tbm_user_data));
+		tbm_surface_internal_add_user_data(tbm_surface,
+							(unsigned long)&key_ud,
+							_wayland_tbm_server_free_user_data);
+		tbm_surface_internal_set_user_data(tbm_surface,
+							(unsigned long)&key_ud,
+							(void*)ud);
+		wl_list_init(&ud->wayland_tbm_buffer_list);
+	}
+
+	return ud;
+}
+
 static void
 _wayland_tbm_server_buffer_destory(struct wl_resource *wl_buffer)
 {
@@ -114,7 +163,7 @@ _wayland_tbm_server_buffer_destory(struct wl_resource *wl_buffer)
 		tbm_buffer->destroy_cb(tbm_buffer->surface, tbm_buffer->user_data);
 
 	tbm_surface_internal_set_debug_data(tbm_buffer->surface, "id", NULL);
-
+	wl_list_remove(&tbm_buffer->link_ref);
 	tbm_surface_internal_unref(tbm_buffer->surface);
 	free(tbm_buffer);
 }
@@ -142,13 +191,17 @@ _wayland_tbm_server_tbm_buffer_create(struct wl_resource *wl_tbm,
 	struct wayland_tbm_server *tbm_srv = wl_resource_get_user_data(wl_tbm);
 	struct wayland_tbm_client_resource *c_res = NULL, *tmp_res = NULL;
 	struct wayland_tbm_buffer *tbm_buffer;
+	struct wayland_tbm_user_data *ud;
 	struct wl_client *wl_client;
+
+	ud = _wayland_tbm_server_get_user_data(surface);
 
 	tbm_buffer = calloc(1, sizeof * tbm_buffer);
 	if (tbm_buffer == NULL) {
 		WL_TBM_S_LOG("Error. fail to allocate a tbm_buffer.\n");
 		return NULL;
 	}
+	wl_list_init(&tbm_buffer->link_ref);
 
 	wl_client = wl_resource_get_client(wl_tbm);
 
@@ -160,6 +213,7 @@ _wayland_tbm_server_tbm_buffer_create(struct wl_resource *wl_tbm,
 		return NULL;
 	}
 
+	wl_list_insert(&ud->wayland_tbm_buffer_list, &tbm_buffer->link_ref);
 	wl_resource_set_implementation(tbm_buffer->wl_buffer,
 				       (void (**)(void)) &_wayland_tbm_buffer_impementation,
 				       tbm_buffer, _wayland_tbm_server_buffer_destory);
@@ -167,6 +221,7 @@ _wayland_tbm_server_tbm_buffer_create(struct wl_resource *wl_tbm,
 	tbm_buffer->flags = flags;
 	tbm_buffer->surface = surface;
 	tbm_buffer->client = wl_client;
+	tbm_buffer->wl_tbm = wl_tbm;
 
 	/* set the debug_pid to the surface for debugging */
 	if (!wl_list_empty(&tbm_srv->cresource_list)) {
@@ -900,6 +955,25 @@ wayland_tbm_server_export_buffer(struct wl_resource *wl_tbm, tbm_surface_h surfa
 	tbm_surface_internal_set_debug_data(surface, "id", debug_id);
 
 	return tbm_buffer->wl_buffer;
+}
+
+struct wl_resource *
+wayland_tbm_server_get_remote_buffer(struct wl_resource *wl_buffer, struct wl_resource *wl_tbm)
+{
+	struct wayland_tbm_user_data *ud;
+	struct wayland_tbm_buffer *pos;
+	tbm_surface_h tbm_surface;
+
+	tbm_surface = wayland_tbm_server_get_surface(NULL, wl_buffer);
+	WL_TBM_RETURN_VAL_IF_FAIL(tbm_surface != NULL, NULL);
+
+	ud = _wayland_tbm_server_get_user_data(tbm_surface);
+	wl_list_for_each(pos, &ud->wayland_tbm_buffer_list, link_ref) {
+		if (pos->wl_tbm == wl_tbm)
+			return pos->wl_buffer;
+	}
+
+	return (struct wl_resource*)NULL;
 }
 
 struct wayland_tbm_client_queue *

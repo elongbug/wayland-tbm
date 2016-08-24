@@ -39,11 +39,14 @@ struct wl_resource;
 
 struct wl_buffer;
 struct wl_callback;
+struct wl_tbm;
 struct wl_tbm_test;
+struct wl_test_remote;
 struct wl_test_surface;
 
 extern const struct wl_interface wl_tbm_test_interface;
 extern const struct wl_interface wl_test_surface_interface;
+extern const struct wl_interface wl_test_remote_interface;
 
 struct wl_tbm_test_interface {
 	/**
@@ -60,6 +63,24 @@ struct wl_tbm_test_interface {
 	void (*set_active_queue)(struct wl_client *client,
 				 struct wl_resource *resource,
 				 struct wl_resource *surface);
+	/**
+	 * set_provider - (none)
+	 * @surface: (none)
+	 * @name: (none)
+	 */
+	void (*set_provider)(struct wl_client *client,
+			     struct wl_resource *resource,
+			     struct wl_resource *surface,
+			     const char *name);
+	/**
+	 * create_remote_surface - (none)
+	 * @surface: (none)
+	 * @name: (none)
+	 */
+	void (*create_remote_surface)(struct wl_client *client,
+				      struct wl_resource *resource,
+				      uint32_t surface,
+				      const char *name);
 };
 
 
@@ -85,6 +106,50 @@ struct wl_test_surface_interface {
 		      uint32_t callback);
 };
 
+
+struct wl_test_remote_interface {
+	/**
+	 * destroy - (none)
+	 */
+	void (*destroy)(struct wl_client *client,
+			struct wl_resource *resource);
+	/**
+	 * release - (none)
+	 * @buffer: (none)
+	 */
+	void (*release)(struct wl_client *client,
+			struct wl_resource *resource,
+			struct wl_resource *buffer);
+	/**
+	 * redirect - (none)
+	 * @wl_tbm: (none)
+	 */
+	void (*redirect)(struct wl_client *client,
+			 struct wl_resource *resource,
+			 struct wl_resource *wl_tbm);
+	/**
+	 * unredirect - (none)
+	 */
+	void (*unredirect)(struct wl_client *client,
+			   struct wl_resource *resource);
+	/**
+	 * bind - (none)
+	 * @surface: (none)
+	 */
+	void (*bind)(struct wl_client *client,
+		     struct wl_resource *resource,
+		     struct wl_resource *surface);
+};
+
+#define WL_TEST_REMOTE_UPDATE	0
+
+#define WL_TEST_REMOTE_UPDATE_SINCE_VERSION	1
+
+static inline void
+wl_test_remote_send_update(struct wl_resource *resource_, struct wl_resource *buffer)
+{
+	wl_resource_post_event(resource_, WL_TEST_REMOTE_UPDATE, buffer);
+}
 
 #ifdef  __cplusplus
 }

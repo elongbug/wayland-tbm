@@ -63,6 +63,12 @@ uint32_t
 wayland_tbm_server_get_buffer_flags(struct wayland_tbm_server *tbm_srv,
 					struct wl_resource *wl_buffer);
 
+struct wl_resource *
+wayland_tbm_server_export_buffer(struct wl_resource *wl_tbm, tbm_surface_h surface);
+
+struct wl_resource *
+wayland_tbm_server_get_remote_buffer(struct wl_resource *wl_buffer, struct wl_resource *wl_tbm);
+
 struct wayland_tbm_client_queue *
 wayland_tbm_server_client_queue_get(struct wayland_tbm_server *tbm_srv,
 					struct wl_resource *wl_surface);
