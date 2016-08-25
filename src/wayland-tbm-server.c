@@ -928,7 +928,9 @@ wayland_tbm_server_get_buffer_flags(struct wayland_tbm_server *tbm_srv,
 }
 
 struct wl_resource *
-wayland_tbm_server_export_buffer(struct wl_resource *wl_tbm, tbm_surface_h surface)
+wayland_tbm_server_export_buffer(struct wayland_tbm_server *tbm_srv,
+							struct wl_resource *wl_tbm,
+							tbm_surface_h surface)
 {
 	struct wayland_tbm_buffer *tbm_buffer = NULL;
 	char debug_id[64] = {0, };
@@ -958,7 +960,9 @@ wayland_tbm_server_export_buffer(struct wl_resource *wl_tbm, tbm_surface_h surfa
 }
 
 struct wl_resource *
-wayland_tbm_server_get_remote_buffer(struct wl_resource *wl_buffer, struct wl_resource *wl_tbm)
+wayland_tbm_server_get_remote_buffer(struct wayland_tbm_server *tbm_srv,
+								struct wl_resource *wl_buffer,
+								struct wl_resource *wl_tbm)
 {
 	struct wayland_tbm_user_data *ud;
 	struct wayland_tbm_buffer *pos;

@@ -147,12 +147,12 @@ _wl_test_surface_attach_cb(struct wl_client *client,
 		
 		wl_list_for_each(pos, &surface->remotes, link) {
 			if (pos->wl_tbm) {
-				wl_remote_buffer = wayland_tbm_server_get_remote_buffer(wl_buffer, pos->wl_tbm);
+				wl_remote_buffer = wayland_tbm_server_get_remote_buffer(NULL, wl_buffer, pos->wl_tbm);
 				if (!wl_remote_buffer) {
 					tbm_surface_h tbm_surface;
 					
 					tbm_surface = wayland_tbm_server_get_surface(NULL, wl_buffer);
-					wl_remote_buffer = wayland_tbm_server_export_buffer(pos->wl_tbm, tbm_surface);
+					wl_remote_buffer = wayland_tbm_server_export_buffer(NULL, pos->wl_tbm, tbm_surface);
 					SERVER_LOG("export: wl_tbm:%p, tbm_surf:%p, wl_buf:%p\n", pos->wl_tbm, tbm_surface, wl_remote_buffer);
 				}
 
