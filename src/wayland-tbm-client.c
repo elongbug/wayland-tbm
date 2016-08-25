@@ -240,9 +240,6 @@ handle_tbm_buffer_import_with_id(void *data,
 fail:
 	if (wl_buffer)
 		wl_buffer_destroy(wl_buffer);
-
-	if (tbm_surface)
-		tbm_surface_destroy(tbm_surface);
 }
 
 static void
@@ -296,9 +293,6 @@ handle_tbm_buffer_import_with_fd(void *data,
 fail:
 	if (wl_buffer)
 		wl_buffer_destroy(wl_buffer);
-
-	if (tbm_surface)
-		tbm_surface_destroy(tbm_surface);
 }
 
 static const struct wl_tbm_listener wl_tbm_client_listener = {
