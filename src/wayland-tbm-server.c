@@ -549,7 +549,7 @@ _wayland_tbm_server_impl_create_buffer_with_fd(struct wl_client *client,
 	if (numPlane != num_plane) {
 		wl_resource_post_error(wl_tbm, WL_TBM_ERROR_INVALID_FORMAT,
 				       "invalid format");
-		return;
+		goto done;
 	}
 
 	memset(&info, 0x0, sizeof(tbm_surface_info_s));
@@ -595,7 +595,7 @@ _wayland_tbm_server_impl_create_buffer_with_fd(struct wl_client *client,
 	if (tbm_buffer == NULL) {
 		tbm_surface_destroy(surface);
 		wl_resource_post_no_memory(wl_tbm);
-		return;
+		goto done;
 	}
 
 	snprintf(debug_id, sizeof(debug_id), "%u", (unsigned int)wl_resource_get_id(tbm_buffer->wl_buffer));
@@ -607,6 +607,7 @@ _wayland_tbm_server_impl_create_buffer_with_fd(struct wl_client *client,
 	WL_TBM_TRACE("pid:%d tbm_surface:%p\n", pid, surface);
 #endif
 
+done:
 	close(buf0);
 	close(buf1);
 	close(buf2);
