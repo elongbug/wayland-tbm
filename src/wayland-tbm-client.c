@@ -243,6 +243,8 @@ handle_tbm_buffer_import_with_id(void *data,
 	WL_TBM_GOTO_IF_FAIL(tbm_surface != NULL, fail);
 	wl_buffer_set_user_data(wl_buffer, tbm_surface);
 
+	WL_TBM_LOG("import id wl_buffer:%u tsurface:%p", (unsigned int)wl_proxy_get_id((struct wl_proxy *)wl_buffer), tbm_surface);
+
 	snprintf(debug_id, sizeof(debug_id), "%u", (unsigned int)wl_proxy_get_id((struct wl_proxy *)wl_buffer));
 	tbm_surface_internal_set_debug_data(tbm_surface, "id", debug_id);
 
@@ -295,6 +297,8 @@ handle_tbm_buffer_import_with_fd(void *data,
 			      buf0, buf1, buf2);
 	WL_TBM_GOTO_IF_FAIL(tbm_surface != NULL, fail);
 	wl_buffer_set_user_data(wl_buffer, tbm_surface);
+
+	WL_TBM_LOG("import fd wl_buffer:%u tsurface:%p", (unsigned int)wl_proxy_get_id((struct wl_proxy *)wl_buffer), tbm_surface);
 
 	snprintf(debug_id, sizeof(debug_id), "%u", (unsigned int)wl_proxy_get_id((struct wl_proxy *)wl_buffer));
 	tbm_surface_internal_set_debug_data(tbm_surface, "id", debug_id);
@@ -854,6 +858,8 @@ handle_tbm_queue_buffer_attached(void *data,
 {
 	struct wayland_tbm_surface_queue *queue_info = data;
 	struct wayland_tbm_buffer *buffer;
+
+	WL_TBM_LOG("attached wl_buffer:%u", (unsigned int)wl_proxy_get_id((struct wl_proxy *)wl_buffer));
 
 	buffer = calloc(1, sizeof(struct wayland_tbm_buffer));
 	wl_list_init(&buffer->link);
