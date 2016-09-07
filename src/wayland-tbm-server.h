@@ -96,6 +96,10 @@ void
 wayland_tbm_server_increase_buffer_sync_timeline(struct wayland_tbm_server *tbm_srv,
 			       struct wl_resource *wl_buffer, unsigned int count);
 
+int
+wayland_tbm_server_buffer_has_sync_timeline(struct wayland_tbm_server *tbm_srv,
+			       struct wl_resource *wl_buffer);
+
 #ifdef  __cplusplus
 }
 #endif

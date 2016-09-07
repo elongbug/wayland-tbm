@@ -1138,3 +1138,23 @@ wayland_tbm_server_increase_buffer_sync_timeline(struct wayland_tbm_server *tbm_
 
 	return;
 }
+
+int
+wayland_tbm_server_buffer_has_sync_timeline(struct wayland_tbm_server *tbm_srv,
+			       struct wl_resource *wl_buffer)
+{
+	struct wayland_tbm_buffer *tbm_buffer  = NULL;
+
+//	WL_TBM_RETURN_VAL_IF_FAIL(tbm_srv != NULL);
+	WL_TBM_RETURN_VAL_IF_FAIL(wl_buffer != NULL, 0);
+
+	if (wl_resource_instance_of(wl_buffer, &wl_buffer_interface,
+				    &_wayland_tbm_buffer_impementation)) {
+		tbm_buffer = wl_resource_get_user_data(wl_buffer);
+
+		if (tbm_buffer->sync_timeline != -1)
+			return 1;
+	}
+
+	return 0;
+}
