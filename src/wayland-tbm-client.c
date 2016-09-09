@@ -874,7 +874,6 @@ handle_tbm_queue_buffer_attached(void *data,
 	WL_TBM_GOTO_IF_FAIL(buffer->tbm_surface != NULL, fail);
 	buffer->flags = flags;
 
-	wl_proxy_set_queue((struct wl_proxy *)buffer->wl_buffer, NULL);
 	wl_list_insert(&queue_info->attach_bufs, &buffer->link);
 
 #ifdef DEBUG_TRACE
