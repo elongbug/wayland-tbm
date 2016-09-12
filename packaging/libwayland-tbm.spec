@@ -75,12 +75,14 @@ cp -af COPYING %{buildroot}/%{TZ_SYS_RO_SHARE}/license/%{name}
 %manifest %{name}.manifest
 %{TZ_SYS_RO_SHARE}/license/%{name}
 %_libdir/libwayland-tbm-server.so.0*
+%_libdir/libtizen-remote-surface-server.so.0*
 
 %files -n libwayland-tbm-client
 %defattr(-,root,root)
 %manifest %{name}.manifest
 %{TZ_SYS_RO_SHARE}/license/%{name}
 %_libdir/libwayland-tbm-client.so.0*
+%_libdir/libtizen-remote-surface-client.so.0*
 %{_bindir}/wayland-tbm-monitor
 
 %files devel
@@ -89,6 +91,9 @@ cp -af COPYING %{buildroot}/%{TZ_SYS_RO_SHARE}/license/%{name}
 %_includedir/wayland-tbm*.h
 %_libdir/libwayland-tbm*.so
 %_libdir/pkgconfig/wayland-tbm*.pc
+%_includedir/tizen-remote-surface*.h
+%_libdir/*tizen-remote-surface*.so
+%_libdir/pkgconfig/tizen-remote-surface*.pc
 %doc README TODO
 
 %changelog

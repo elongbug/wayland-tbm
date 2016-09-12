@@ -57,6 +57,20 @@ nodist_libwayland_tbm_client_la_SOURCES =		\
 %-client-protocol.h : $(top_srcdir)/protocol/%.xml
 	$(AM_V_GEN)$(MKDIR_P) $(dir $@) && $(wayland_scanner) client-header < $< > $@
 
+### tizen-remote-surface
+lib_LTLIBRARIES += \
+    libtizen-remote-surface-server.la \
+    libtizen-remote-surface-client.la
+include_HEADERS += \
+    tizen-remote-surface-server-protocol.h \
+    tizen-remote-surface-client-protocol.h
+libtizen_remote_surface_server_la_SOURCES = tizen-remote-surface-protocol.c
+libtizen_remote_surface_server_la_CFLAGS  = @WL_TBM_SERVER_CFLAGS@
+libtizen_remote_surface_server_la_LIBADD  = @WL_TBM_SERVER_LIBS@
+libtizen_remote_surface_client_la_SOURCES = tizen-remote-surface-protocol.c
+libtizen_remote_surface_client_la_CFLAGS  = @WL_TBM_CLIENT_CFLAGS@
+libtizen_remote_surface_client_la_LIBADD  = @WL_TBM_CLIENT_LIBS@
+
 BUILT_SOURCES = \
 	$(nodist_libwayland_tbm_server_la_SOURCES)	\
 	$(nodist_libwayland_tbm_client_la_SOURCES)

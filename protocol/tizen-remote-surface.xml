@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<protocol name="tizen_remote_surface">
+  <interface name="tizen_remote_surface_manager" version="1">
+     <description summary="manager of tizen_remote_surface">
+        A manager of tizen_remote_surface. Thie object is in charge of
+        creating tizen_remote_surface_provider and tizen_remote_surface and
+        provide additional operations for those objects.
+     </description>
+     <request name="create_provider">
+        <description summary="create nea remote surface provider">
+           Ask manager to create a new remote surface provider.
+           A wl_surface is required for making remote surface provider.
+        </description>
+        <arg name="id" type="new_id" interface="tizen_remote_surface_provider" />
+        <arg name="surface" type="object" interface="wl_surface" />
+     </request>
+
+     <request name="create_surface">
+        <description summary="create new remote surface">
+           Ask manager to create a new remote surface.
+           resource_id is required to identify this remote surface is what provider of
+           and wl_tbm object is used to remote buffer for this remote surface.
+        </description>
+        <arg name="id" type="new_id" interface="tizen_remote_surface" />
+        <arg name="resource_id" type="uint" />
+       <arg name="tbm" type="object" interface="wl_tbm" />
+     </request>
+
+     <request name="bind_surface">
+        <description summary="bind a remote surface and a wl_surface">
+           Combining a remote surface object into a wl_surface object.
+        </description>
+        <arg name="surface" type="object" interface="wl_surface" />
+        <arg name="remote_surface" type="object" interface="tizen_remote_surface" />
+     </request>
+  </interface>
+
+  <interface name="tizen_remote_surface_provider" version="1">
+     <description summary="a provider of remote buffer source">
+        A provider client. Surfaces of providers are not included on compositing,
+        Instead of that its attached buffer is used for creating remote buffer
+        and the remote buffer is delivered to remote surfaces.
+     </description>
+     <request name="destroy" type="destructor" />
+
+     <!-- for id -->
+     <event name="resource_id">
+        <description summary="announce resource id of provider">
+           Announce resource id of this provider.
+        </description>
+        <arg name="resource_id" type="uint" />
+     </event>
+
+     <!-- for visibility -->
+     <event name="visibility">
+        <description summary="notify of visibility change">
+           Notify of visibility chages.
+           This provider's visibility is determined by its remote surfaces.
+        </description>
+        <arg name="visibility" type="uint" enum="visibility_type"/>
+     </event>
+
+     <enum name="visibility_type">
+        <entry name="visible" value="0" />
+        <entry name="invisible" value="1" />
+     </enum>
+  </interface>
+
+  <interface name="tizen_remote_surface" version="1">
+     <request name="destroy" type="destructor" />
+
+     <!-- for buffer update -->
+     <request name="redirect">
+        <description summary="request redirect of provider's buffer"/>
+     </request>
+     <request name="unredirect">
+        <description summary="request unredirect of provider's buffer"/>
+     </request>
+
+     <event name="update_buffer">
+        <description summary="deliver updated buffer of provider">
+           When selected provider of a remote surface sent wl_surface.commit,
+           server deliver a remote buffer is created using a buffer of the
+           provider.
+        </description>
+        <arg name="buffer" type="object" interface="wl_buffer" />
+        <arg name="time" type="uint" />
+     </event>
+
+     <!-- for event transference -->
+     <request name="transfer_mouse_event">
+        <arg name="event_type" type="uint" enum="event_type"/>
+        <arg name="device" type="int" />
+        <arg name="button" type="int" />
+        <arg name="x" type="int" />
+        <arg name="y" type="int" />
+        <arg name="radius_x" type="fixed" />
+        <arg name="radius_y" type="fixed" />
+        <arg name="pressure" type="fixed" />
+        <arg name="angle" type="fixed" />
+        <arg name="class" type="uint" />
+        <arg name="subclass" type="uint" />
+        <arg name="identifier" type="string" />
+        <arg name="time" type="uint" />
+     </request>
+
+     <request name="transfer_mouse_wheel">
+        <arg name="direction" type="uint" />
+        <arg name="z" type="int" />
+        <arg name="class" type="uint" />
+        <arg name="subclass" type="uint" />
+        <arg name="identifier" type="string" />
+        <arg name="time" type="uint" />
+     </request>
+
+     <request name="transfer_touch_event">
+        <arg name="event_type" type="uint" enum="event_type"/>
+        <arg name="device" type="int" />
+        <arg name="button" type="int" />
+        <arg name="x" type="int" />
+        <arg name="y" type="int" />
+        <arg name="radius_x" type="fixed" />
+        <arg name="radius_y" type="fixed" />
+        <arg name="pressure" type="fixed" />
+        <arg name="angle" type="fixed" />
+        <arg name="class" type="uint" />
+        <arg name="subclass" type="uint" />
+        <arg name="identifier" type="string" />
+        <arg name="time" type="uint" />
+     </request>
+
+     <request name="transfer_touch_cancel" />
+
+     <request name="transfer_key_event">
+        <arg name="event_type" type="uint" enum="event_type"/>
+        <arg name="keycode" type="int" />
+        <arg name="class" type="uint" />
+        <arg name="subclass" type="uint" />
+        <arg name="identifier" type="string" />
+        <arg name="time" type="uint" />
+     </request>
+
+     <enum name="event_type">
+        <entry name="none" value="0" />
+        <entry name="mouse_down" value="1" />
+        <entry name="mouse_up" value="2" />
+        <entry name="mouse_move" value="3" />
+        <entry name="touch_down" value="4" />
+        <entry name="touch_up" value="5" />
+        <entry name="touch_move" value="6" />
+        <entry name="key_down" value="7" />
+        <entry name="key_up" value="8" />
+     </enum>
+
+     <!-- for visibility transference -->
+     <request name="transfer_visibility">
+        <description summary="notify of visibility change of remote surface" />
+        <arg name="visibility" type="uint" enum="visibility_type" />
+     </request>
+
+     <enum name="visibility_type">
+        <entry name="visible" value="0" />
+        <entry name="invisible" value="1" />
+     </enum>
+
+     <!-- for notify of provider's ejection -->
+     <event name="missing">
+        <description summary="notify of leave of provider" />
+     </event>
+  </interface>
+</protocol>
