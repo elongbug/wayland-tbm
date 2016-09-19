@@ -1151,6 +1151,7 @@ wayland_tbm_server_buffer_has_sync_timeline(struct wayland_tbm_server *tbm_srv,
 	if (wl_resource_instance_of(wl_buffer, &wl_buffer_interface,
 				    &_wayland_tbm_buffer_impementation)) {
 		tbm_buffer = wl_resource_get_user_data(wl_buffer);
+		WL_TBM_RETURN_VAL_IF_FAIL(tbm_buffer != NULL, 0);
 
 		if (tbm_buffer->sync_timeline != -1)
 			return 1;
