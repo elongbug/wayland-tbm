@@ -25,9 +25,7 @@ AC_CONFIG_FILES([
     src/Makefile
     test/Makefile
     tool/Makefile
-    wayland-tbm-server.pc
-    wayland-tbm-client.pc
-    tizen-remote-surface-server.pc
-    tizen-remote-surface-client.pc
+	wayland-tbm-server.pc
+	wayland-tbm-client.pc
 ])
 AC_OUTPUT
