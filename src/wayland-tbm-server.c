@@ -45,7 +45,7 @@ DEALINGS IN THE SOFTWARE.
 
 #include "wayland-tbm-int.h"
 
-WL_TBM_MONITOR_TRACE_STATUS trace_status;
+static WL_TBM_MONITOR_TRACE_STATUS trace_status;
 
 //#define WL_TBM_SERVER_DEBUG
 //#define DEBUG_TRACE

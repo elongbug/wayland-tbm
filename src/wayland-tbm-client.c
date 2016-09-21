@@ -88,7 +88,7 @@ struct wayland_tbm_surface_queue {
 	struct wl_list link;
 };
 
-WL_TBM_MONITOR_TRACE_STATUS trace_status;
+static WL_TBM_MONITOR_TRACE_STATUS trace_status;
 
 //#define DEBUG_TRACE
 #ifdef DEBUG_TRACE
