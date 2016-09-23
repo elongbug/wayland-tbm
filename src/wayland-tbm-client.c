@@ -857,12 +857,14 @@ handle_tbm_queue_buffer_attached(void *data,
 		uint32_t flags)
 {
 	struct wayland_tbm_surface_queue *queue_info = data;
-	struct wayland_tbm_buffer *buffer;
+	struct wayland_tbm_buffer *buffer = NULL;
+
+	WL_TBM_RETURN_IF_FAIL(wl_buffer != NULL);
 
 	WL_TBM_LOG("attached wl_buffer:%u", (unsigned int)wl_proxy_get_id((struct wl_proxy *)wl_buffer));
 
 	buffer = calloc(1, sizeof(struct wayland_tbm_buffer));
-	WL_TBM_GOTO_IF_FAIL(buffer != NULL, fail);
+	WL_TBM_RETURN_IF_FAIL(buffer != NULL);
 
 	wl_list_init(&buffer->link);
 
@@ -885,10 +887,11 @@ handle_tbm_queue_buffer_attached(void *data,
 	return;
 
 fail:
-	if (buffer->tbm_surface)
-		tbm_surface_destroy(buffer->tbm_surface);
-
-	free(buffer);
+	if (buffer) {
+		if (buffer->tbm_surface)
+			tbm_surface_destroy(buffer->tbm_surface);
+		free(buffer);
+	}
 
 	if (wl_buffer)
 		wl_buffer_destroy(wl_buffer);
