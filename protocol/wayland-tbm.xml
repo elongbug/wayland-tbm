@@ -151,14 +151,6 @@
   </interface>
 
   <interface name="wl_tbm_queue" version="1">
-    <event name="info">
-      <arg name="width" type="int"/>
-      <arg name="height" type="int"/>
-      <arg name="format" type="int"/>
-      <arg name="flags" type="uint"/>
-      <arg name="num_buffers" type="uint"/>
-    </event>
-
     <event name="buffer_attached">
       <arg name="id" type="object" interface="wl_buffer"/>
       <arg name="flags" type="uint"/>

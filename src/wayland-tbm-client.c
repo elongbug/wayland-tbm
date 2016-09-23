@@ -45,7 +45,6 @@ DEALINGS IN THE SOFTWARE.
 
 struct wayland_tbm_client {
 	struct wl_display *dpy;
-	struct wl_event_queue *wl_queue;
 	struct wl_tbm *wl_tbm;
 
 	tbm_bufmgr bufmgr;
@@ -333,7 +332,6 @@ _wayland_tbm_client_registry_handle_global(void *data,
 		WL_TBM_RETURN_IF_FAIL(tbm_client->wl_tbm != NULL);
 
 		wl_tbm_add_listener(tbm_client->wl_tbm, &wl_tbm_client_listener, tbm_client);
-		wl_proxy_set_queue((struct wl_proxy *)tbm_client->wl_tbm, tbm_client->wl_queue);
 
 		tbm_client->bufmgr = tbm_bufmgr_init(-1);
 		if (!tbm_client->bufmgr) {
@@ -357,6 +355,7 @@ wayland_tbm_client_init(struct wl_display *display)
 
 	struct wayland_tbm_client *tbm_client = NULL;
 	struct wl_registry *wl_registry;
+	struct wl_event_queue *wl_queue;
 
 	_wayland_tbm_check_dlog_enable();
 
@@ -367,8 +366,8 @@ wayland_tbm_client_init(struct wl_display *display)
 
 	tbm_client->dpy = display;
 
-	tbm_client->wl_queue = wl_display_create_queue(display);
-	if (!tbm_client->wl_queue) {
+	wl_queue = wl_display_create_queue(display);
+	if (!wl_queue) {
 		WL_TBM_LOG("Failed to create queue.\n");
 
 		free(tbm_client);
@@ -379,17 +378,17 @@ wayland_tbm_client_init(struct wl_display *display)
 	if (!wl_registry) {
 		WL_TBM_LOG("Failed to get registry\n");
 
-		wl_event_queue_destroy(tbm_client->wl_queue);
+		wl_event_queue_destroy(wl_queue);
 		free(tbm_client);
 		return NULL;
 	}
 
-	wl_proxy_set_queue((struct wl_proxy *)wl_registry, tbm_client->wl_queue);
+	wl_proxy_set_queue((struct wl_proxy *)wl_registry, wl_queue);
 
 	wl_registry_add_listener(wl_registry, &registry_listener, tbm_client);
-	wl_display_roundtrip_queue(display, tbm_client->wl_queue);
+	wl_display_roundtrip_queue(display, wl_queue);
 
-	wl_event_queue_destroy(tbm_client->wl_queue);
+	wl_event_queue_destroy(wl_queue);
 	wl_registry_destroy(wl_registry);
 
 	/* check wl_tbm */
@@ -804,53 +803,6 @@ __wayland_tbm_client_surface_free_cb(tbm_surface_queue_h surface_queue, void *da
 }
 
 static void
-handle_tbm_queue_info(void *data,
-		      struct wl_tbm_queue *wl_tbm_queue,
-		      int32_t width,
-		      int32_t height,
-		      int32_t format,
-		      uint32_t flags,
-		      uint32_t num_buffers)
-{
-	struct wayland_tbm_surface_queue *queue_info = data;
-
-	if (queue_info->tbm_queue) {
-		WL_TBM_C_LOG("INFO cur(%dx%d fmt:0x%x num:%d) new(%dx%d fmt:0x%x num:%d)\n",
-			queue_info->width, queue_info->height,
-			queue_info->format, queue_info->num_bufs,
-			width, height, format, num_buffers);
-		return;
-	}
-
-	queue_info->width = width;
-	queue_info->height = height;
-	queue_info->format = format;
-	queue_info->flag = flags;
-	queue_info->num_bufs = num_buffers;
-
-	queue_info->tbm_queue = tbm_surface_queue_sequence_create(num_buffers,
-								width,
-								height,
-								format,
-								flags);
-
-	if (!queue_info->tbm_queue) {
-		WL_TBM_C_LOG("failed to create_surface %dx%d format:0x%x flags:%d, num_bufs:%d",
-			     width, height, format, flags, num_buffers);
-	}
-
-	tbm_surface_queue_set_alloc_cb(queue_info->tbm_queue,
-				       __wayland_tbm_client_surface_alloc_cb,
-				       __wayland_tbm_client_surface_free_cb,
-				       queue_info);
-
-#ifdef DEBUG_TRACE
-	WL_TBM_TRACE("pid:%d\n", getpid());
-#endif
-
-}
-
-static void
 handle_tbm_queue_buffer_attached(void *data,
 		struct wl_tbm_queue *wl_tbm_queue,
 		struct wl_buffer *wl_buffer,
@@ -961,7 +913,6 @@ handle_tbm_queue_flush(void *data,
 
 
 const struct wl_tbm_queue_listener wl_tbm_queue_listener = {
-	handle_tbm_queue_info,
 	handle_tbm_queue_buffer_attached,
 	handle_tbm_queue_active,
 	handle_tbm_queue_deactive,
@@ -1043,7 +994,6 @@ wayland_tbm_client_create_surface_queue(struct wayland_tbm_client *tbm_client,
 	queue_info->wl_tbm_queue = queue;
 
 	wl_tbm_queue_add_listener(queue, &wl_tbm_queue_listener, queue_info);
-	wl_display_roundtrip(tbm_client->dpy);
 
 	queue_info->width = width;
 	queue_info->height = height;
