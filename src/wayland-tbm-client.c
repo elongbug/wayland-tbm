@@ -563,17 +563,11 @@ wayland_tbm_client_destroy_buffer(struct wayland_tbm_client *tbm_client,
 	WL_TBM_RETURN_IF_FAIL(tbm_client != NULL);
 	WL_TBM_RETURN_IF_FAIL(wl_buffer != NULL);
 
-	tbm_surface_h surface = NULL;
-
 	// TODO: valid check if the buffer is from this tbm_client???
 
 #ifdef DEBUG_TRACE
 	WL_TBM_TRACE("       pid:%d wl_buffer:%p\n", getpid(), wl_buffer);
 #endif
-
-	surface = wl_buffer_get_user_data(wl_buffer);
-	if (surface)
-		tbm_surface_internal_set_debug_data(surface, "id", NULL);
 
 	wl_buffer_set_user_data(wl_buffer, NULL);
 	wl_buffer_destroy(wl_buffer);
