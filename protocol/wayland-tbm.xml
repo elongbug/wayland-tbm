@@ -78,22 +78,6 @@
       <arg name="buf2"	type="fd"/>
     </request>
 
-    <!-- monitor the tbm_bo of the clients and the server -->
-    <request name="request_tbm_monitor">
-      <arg name="command" type="int"/>
-      <arg name="trace_command" type="int"/>
-      <arg name="target" type="int"/>
-      <arg name="pid" type="int"/>
-    </request>
-
-    <!-- monitor the tbm_bo of the client -->
-    <event name="monitor_client_tbm_bo">
-      <arg name="command" type="int"/>
-      <arg name="trace_command" type="int"/>
-      <arg name="target" type="int"/>
-      <arg name="pid" type="int"/>
-    </event>
-
     <!-- version 2 -->
     <request name="create_surface_queue">
       <arg name="surface_queue" type="new_id" interface="wl_tbm_queue"/>
@@ -148,6 +132,9 @@
       <arg name="buffer" type="object" interface="wl_buffer"/>
       <arg name="timeline" type="fd"/>
     </request>
+
+    <request name="destroy" type="destructor">
+    </request>
   </interface>
 
   <interface name="wl_tbm_queue" version="1">
@@ -170,5 +157,26 @@
     <request name="detach_buffer">
       <arg name="buffer" type="object" interface="wl_buffer"/>
     </request>
+  </interface>
+
+  <interface name="wl_tbm_monitor" version="1">
+    <request name="destroy" type="destructor">
+    </request>
+
+    <!-- monitor the tbm_bo of the clients and the server -->
+    <request name="request_tbm_monitor">
+      <arg name="command" type="int"/>
+      <arg name="trace_command" type="int"/>
+      <arg name="target" type="int"/>
+      <arg name="pid" type="int"/>
+    </request>
+
+    <!-- monitor the tbm_bo of the client -->
+    <event name="monitor_client_tbm_bo">
+      <arg name="command" type="int"/>
+      <arg name="trace_command" type="int"/>
+      <arg name="target" type="int"/>
+      <arg name="pid" type="int"/>
+    </event>
   </interface>
 </protocol>

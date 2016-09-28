@@ -38,7 +38,7 @@ DEALINGS IN THE SOFTWARE.
 
 struct wayland_tbm_monitor {
 	struct wl_display *dpy;
-	struct wl_tbm *wl_tbm;
+	struct wl_tbm_monitor *wl_tbm_monitor;
 
 	struct {
 		WL_TBM_MONITOR_COMMAND command;
@@ -52,7 +52,7 @@ struct wayland_tbm_monitor {
 	} options;
 };
 
-static const struct wl_tbm_listener wl_tbm_monitor_listener = {
+static const struct wl_tbm_monitor_listener wl_tbm_monitor_listener = {
 	NULL, /* monitor_client_tbm_bo */
 };
 
@@ -65,15 +65,15 @@ _wayland_tbm_monitor_registry_handle_global(void *data,
 {
 	struct wayland_tbm_monitor *tbm_monitor = (struct wayland_tbm_monitor *)data;
 
-	if (!strcmp(interface, "wl_tbm")) {
-		tbm_monitor->wl_tbm = wl_registry_bind(registry, name, &wl_tbm_interface,
+	if (!strcmp(interface, "wl_tbm_monitor")) {
+		tbm_monitor->wl_tbm_monitor = wl_registry_bind(registry, name, &wl_tbm_monitor_interface,
 						       version);
-		WL_TBM_RETURN_IF_FAIL(tbm_monitor->wl_tbm != NULL);
+		WL_TBM_RETURN_IF_FAIL(tbm_monitor->wl_tbm_monitor != NULL);
 
-		wl_tbm_add_listener(tbm_monitor->wl_tbm, &wl_tbm_monitor_listener, tbm_monitor);
+		wl_tbm_monitor_add_listener(tbm_monitor->wl_tbm_monitor, &wl_tbm_monitor_listener, tbm_monitor);
 
 		/* request the tbm monitor */
-		wl_tbm_request_tbm_monitor(tbm_monitor->wl_tbm,
+		wl_tbm_monitor_request_tbm_monitor(tbm_monitor->wl_tbm_monitor,
 					   tbm_monitor->options.command,
 					   tbm_monitor->options.subcommand,
 					   tbm_monitor->options.target,
@@ -336,9 +336,8 @@ main(int argc, char *argv[])
 
 finish:
 	if (tbm_monitor) {
-		if (tbm_monitor->wl_tbm) {
-			wl_tbm_set_user_data(tbm_monitor->wl_tbm, NULL);
-			wl_tbm_destroy(tbm_monitor->wl_tbm);
+		if (tbm_monitor->wl_tbm_monitor) {
+			wl_tbm_monitor_destroy(tbm_monitor->wl_tbm_monitor);
 		}
 
 		free(tbm_monitor);
