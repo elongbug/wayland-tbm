@@ -169,6 +169,7 @@ _wayland_tbm_server_buffer_destory(struct wl_resource *wl_buffer)
 		tbm_buffer->destroy_cb(tbm_buffer->surface, tbm_buffer->user_data);
 
 	tbm_surface_internal_set_debug_data(tbm_buffer->surface, "id", NULL);
+	tbm_surface_internal_set_debug_pid(tbm_buffer->surface, 0);
 	wl_list_remove(&tbm_buffer->link_ref);
 
 	if (tbm_buffer->sync_timeline != -1)
