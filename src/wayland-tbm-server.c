@@ -1059,7 +1059,8 @@ wayland_tbm_server_client_queue_get(struct wayland_tbm_server *tbm_srv, struct w
 }
 
 void
-wayland_tbm_server_client_queue_activate(struct wayland_tbm_client_queue *cqueue, uint32_t usage)
+wayland_tbm_server_client_queue_activate(struct wayland_tbm_client_queue *cqueue,
+			uint32_t usage, uint32_t queue_size, uint32_t need_flush)
 {
 	WL_TBM_RETURN_IF_FAIL(cqueue != NULL);
 	WL_TBM_RETURN_IF_FAIL(cqueue->wl_tbm_queue != NULL);
@@ -1067,7 +1068,7 @@ wayland_tbm_server_client_queue_activate(struct wayland_tbm_client_queue *cqueue
 #ifdef DEBUG_TRACE
 	WL_TBM_TRACE("      pid:%d\n", cqueue->pid);
 #endif
-	wl_tbm_queue_send_active(cqueue->wl_tbm_queue, usage);
+	wl_tbm_queue_send_active(cqueue->wl_tbm_queue, usage, queue_size, 1);
 }
 
 void

@@ -145,6 +145,8 @@
 
     <event name="active">
       <arg name="usage" type="uint"/>
+      <arg name="queue_size" type="uint"/>
+      <arg name="need_flush" type="uint"/>
     </event>
 
     <event name="deactive"/>

@@ -79,6 +79,7 @@ struct wayland_tbm_surface_queue {
 	int format;
 	int flag;
 	uint num_bufs;
+	uint queue_size;
 	struct wl_surface *wl_surface;
 
 	int is_active;
@@ -669,7 +670,7 @@ _wayland_tbm_client_surface_queue_flush(struct wayland_tbm_surface_queue *queue_
 	WL_TBM_TRACE("pid:%d\n", getpid());
 #endif
 	_wayland_tbm_client_queue_destory_attach_bufs(queue_info);
-	tbm_surface_queue_flush(queue_info->tbm_queue);
+	tbm_surface_queue_set_size(queue_info->tbm_queue, queue_info->queue_size, 1);
 }
 
 static tbm_surface_h
@@ -877,7 +878,9 @@ fail:
 static void
 handle_tbm_queue_active(void *data,
 			struct wl_tbm_queue *wl_tbm_queue,
-			uint32_t usage)
+			uint32_t usage,
+			uint32_t queue_size,
+			uint32_t need_flush)
 {
 	struct wayland_tbm_surface_queue *queue_info = data;
 
@@ -893,7 +896,7 @@ handle_tbm_queue_active(void *data,
 	queue_info->usage = usage;
 
 	/* flush the allocated surfaces at the client */
-	tbm_surface_queue_flush(queue_info->tbm_queue);
+	tbm_surface_queue_set_size(queue_info->tbm_queue, queue_size, need_flush);
 }
 
 static void
@@ -1024,6 +1027,7 @@ wayland_tbm_client_create_surface_queue(struct wayland_tbm_client *tbm_client,
 	queue_info->height = height;
 	queue_info->format = format;
 	queue_info->flag = 0;
+	queue_info->queue_size = queue_size;
 
 	queue_info->tbm_queue = tbm_surface_queue_sequence_create(queue_size,
 				width, height, format, 0);

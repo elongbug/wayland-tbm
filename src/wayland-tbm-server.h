@@ -79,7 +79,7 @@ wayland_tbm_server_client_queue_get(struct wayland_tbm_server *tbm_srv,
 
 void
 wayland_tbm_server_client_queue_activate(struct wayland_tbm_client_queue *client_queue,
-					uint32_t usage);
+					uint32_t usage, uint32_t queue_size, uint32_t need_flush);
 
 void
 wayland_tbm_server_client_queue_deactivate(struct wayland_tbm_client_queue *client_queue);
