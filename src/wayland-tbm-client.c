@@ -402,7 +402,14 @@ wayland_tbm_client_init(struct wl_display *display)
 	wl_proxy_set_queue((struct wl_proxy *)wl_registry, wl_queue);
 
 	wl_registry_add_listener(wl_registry, &registry_listener, tbm_client);
-	wl_display_roundtrip_queue(display, wl_queue);
+	if (wl_display_roundtrip_queue(display, wl_queue) < 0) {
+		WL_TBM_LOG("Failed to wl_display_roundtrip_queuey\n");
+
+		wl_event_queue_destroy(wl_queue);
+		wl_registry_destroy(wl_registry);
+		free(tbm_client);
+		return NULL;
+	}
 
 	wl_event_queue_destroy(wl_queue);
 	wl_registry_destroy(wl_registry);
