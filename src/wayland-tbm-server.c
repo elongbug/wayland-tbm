@@ -720,11 +720,11 @@ _wayland_tbm_server_destroy_resource(struct wl_resource *wl_tbm)
 {
 	struct wayland_tbm_server *tbm_srv = NULL;
 
-	{
-		pid_t pid;
-		wl_client_get_credentials(wl_resource_get_client(wl_tbm), &pid, NULL, NULL);
-		WL_TBM_S_LOG("wl_tbm_monitor destroy. client=%d\n", pid);
-	}
+#ifdef DEBUG_TRACE
+	pid_t pid;
+	wl_client_get_credentials(wl_resource_get_client(wl_tbm), &pid, NULL, NULL);
+	WL_TBM_S_LOG("wl_tbm_monitor destroy. client=%d\n", pid);
+#endif
 
 	/* remove the client resources to the list */
 	tbm_srv = wl_resource_get_user_data(wl_tbm);

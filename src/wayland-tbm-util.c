@@ -142,7 +142,7 @@ _wayland_tbm_check_dlog_enable(void)
 		bDlog = atoi(env);
 		WL_TBM_LOG("WL_TBM_DLOG=%s\n", env);
 	} else {
-		bDlog = 0;
+		bDlog = 1;
 	}
 #endif
 	return;
