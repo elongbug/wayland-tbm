@@ -12,7 +12,7 @@
 
 #include "wayland-tbm-test-client-protocol.h"
 
-#define WL_APP_C_LOG(fmt, ...)   fprintf (stderr, "[CLIENT(%d):%s] " fmt, getpid(), __func__, ##__VA_ARGS__)
+#define WL_APP_C_LOG(fmt, ...)   fprintf(stderr, "[CLIENT(%d):%s] " fmt, getpid(), __func__, ##__VA_ARGS__)
 
 typedef struct {
 	struct wayland_tbm_client *tbm_client;
@@ -22,7 +22,7 @@ typedef struct {
 
 	struct wl_buffer *bufs[3];
 	int cur_buf;
-	
+
 	int exit;
 } AppInfoClient;
 
@@ -56,12 +56,12 @@ static const struct wl_registry_listener wl_registry_impl = {
 	_wl_registry_global_remove_cb,
 };
 
-static void 
+static void
 _wl_test_remote_update_cb(void *data,
 		       struct wl_test_remote *wl_test_remote,
 		       struct wl_buffer *buffer)
 {
-	WL_APP_C_LOG("wl_buffer:%p, tbm_surface:%p\n",buffer, wl_buffer_get_user_data(buffer));
+	WL_APP_C_LOG("wl_buffer:%p, tbm_surface:%p\n", buffer, wl_buffer_get_user_data(buffer));
 }
 
 static const struct wl_test_remote_listener wl_test_remote_impl = {
@@ -78,17 +78,16 @@ void create_consumer(AppInfoClient *app)
 int
 main(int argc, char *argv[])
 {
+	static const char *default_dpy_name = "tbm_remote";
 	struct wl_display *dpy = NULL;
 	struct wl_registry *registry;
 	const char *dpy_name = NULL;
-	const static char *default_dpy_name = "tbm_remote";
 	int ret = 0;
 
-	if (argc > 1) {
+	if (argc > 1)
 		dpy_name = argv[1];
-	} else {
+	else
 		dpy_name = default_dpy_name;
-	}
 
 	dpy = wl_display_connect(dpy_name);
 	if (!dpy) {
@@ -112,10 +111,9 @@ main(int argc, char *argv[])
 	gApp.wl_tbm = wayland_tbm_client_get_wl_tbm(gApp.tbm_client);
 
 	create_consumer(&gApp);
-	
-	while (ret >= 0 && gApp.exit == 0) {
+
+	while (ret >= 0 && gApp.exit == 0)
 		ret = wl_display_dispatch(dpy);
-	}
 
 finish:
 	return 1;

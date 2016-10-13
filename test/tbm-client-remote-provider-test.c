@@ -12,7 +12,7 @@
 
 #include "wayland-tbm-test-client-protocol.h"
 
-#define WL_APP_C_LOG(fmt, ...)   fprintf (stderr, "[CLIENT(%d):%s] " fmt, getpid(), __func__, ##__VA_ARGS__)
+#define WL_APP_C_LOG(fmt, ...)   fprintf(stderr, "[CLIENT(%d):%s] " fmt, getpid(), __func__, ##__VA_ARGS__)
 
 typedef struct {
 	struct wayland_tbm_client *tbm_client;
@@ -22,7 +22,7 @@ typedef struct {
 
 	struct wl_buffer *bufs[3];
 	int cur_buf;
-	
+
 	int exit;
 } AppInfoClient;
 
@@ -60,13 +60,13 @@ void create_provider(AppInfoClient *app)
 {
 	tbm_surface_h tbm_surf;
 	int i;
-	
+
 	app->surface = wl_tbm_test_create_surface(app->wl_tbm_test);
 	wl_tbm_test_set_provider(app->wl_tbm_test, app->surface, "test");
 
 	//Make wl_buffer
-	for (i=0; i<3; i++) {
-		tbm_surf = tbm_surface_create(16,16, TBM_FORMAT_ABGR8888);
+	for (i = 0; i < 3; i++) {
+		tbm_surf = tbm_surface_create(16, 16, TBM_FORMAT_ABGR8888);
 		app->bufs[i] = wayland_tbm_client_create_buffer(app->tbm_client, tbm_surf);
 	}
 }
@@ -78,8 +78,8 @@ void _wl_callback_done_cb(void *data,
 	AppInfoClient *app = (AppInfoClient *)data;
 
 	wl_test_surface_attach(app->surface, app->bufs[app->cur_buf]);
-	app->cur_buf = (app->cur_buf+1)%3;
-	
+	app->cur_buf = (app->cur_buf + 1) % 3;
+
 	wl_callback_destroy(wl_callback);
 }
 
@@ -93,16 +93,15 @@ main(int argc, char *argv[])
 	struct wl_display *dpy = NULL;
 	struct wl_registry *registry;
 	const char *dpy_name = NULL;
-	const static char *default_dpy_name = "tbm_remote";
+	static const char *default_dpy_name = "tbm_remote";
 	int ret = 0;
 
 	struct wl_callback *wl_cb;
 
-	if (argc > 1) {
+	if (argc > 1)
 		dpy_name = argv[1];
-	} else {
+	else
 		dpy_name = default_dpy_name;
-	}
 
 	dpy = wl_display_connect(dpy_name);
 	if (!dpy) {
@@ -126,7 +125,7 @@ main(int argc, char *argv[])
 	gApp.wl_tbm = wayland_tbm_client_get_wl_tbm(gApp.tbm_client);
 
 	create_provider(&gApp);
-	
+
 	while (ret >= 0 && gApp.exit == 0) {
 		wl_cb = wl_display_sync(dpy);
 		wl_callback_add_listener(wl_cb, &do_done_impl, &gApp);

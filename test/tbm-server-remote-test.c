@@ -8,7 +8,7 @@
 
 #include "wayland-tbm-test-server-protocol.h"
 
-#define SERVER_LOG(fmt, ...)   fprintf (stderr, "[SERVER(%d):%s] " fmt, getpid(), __func__, ##__VA_ARGS__)
+#define SERVER_LOG(fmt, ...)   fprintf(stderr, "[SERVER(%d):%s] " fmt, getpid(), __func__, ##__VA_ARGS__)
 
 typedef struct {
 	struct wl_display *dpy;
@@ -16,7 +16,7 @@ typedef struct {
 	struct wl_global *wl_tbm_test;
 
 	struct wl_resource *provider;
-}Server;
+} Server;
 
 typedef struct {
 	struct wl_resource *wl_surface;
@@ -24,16 +24,16 @@ typedef struct {
 	struct wl_resource *front;
 
 	struct wl_list remotes;
-}Surface;
+} Surface;
 
 typedef struct {
 	struct wl_resource *wl_remote_surface;
 	struct wl_resource *wl_tbm;
 	struct wl_resource *front;
 	Surface *provider;
-	
+
 	struct wl_list link;
-}RemoteSurface;
+} RemoteSurface;
 
 Server gServer;
 
@@ -46,7 +46,7 @@ _wl_test_remote_destroy(struct wl_resource *resource)
 		wl_list_remove(&remote->link);
 		SERVER_LOG("%p(%p)\n", resource, remote);
 	}
-	
+
 	free(remote);
 }
 
@@ -106,11 +106,11 @@ _wl_test_surface_destroy(struct wl_resource *resource)
 	Surface *surface = (Surface *)wl_resource_get_user_data(resource);
 
 	SERVER_LOG("%p provider:%p\n", resource, gServer.provider);
-	
+
 	if (!wl_list_empty(&surface->remotes)) {
 		RemoteSurface *pos, *tmp;
-		
-		wl_list_for_each_safe(pos, tmp,&surface->remotes, link) {
+
+		wl_list_for_each_safe(pos, tmp, &surface->remotes, link) {
 			pos->provider = NULL;
 			wl_list_remove(&pos->link);
 		}
@@ -139,18 +139,18 @@ _wl_test_surface_attach_cb(struct wl_client *client,
 
 	if (surface->front && (surface->front != wl_buffer))
 		wl_buffer_send_release(surface->front);
-	
+
 	surface->front = wl_buffer;
 	if (!wl_list_empty(&surface->remotes)) {
 		RemoteSurface *pos;
 		struct wl_resource *wl_remote_buffer = NULL;
-		
+
 		wl_list_for_each(pos, &surface->remotes, link) {
 			if (pos->wl_tbm) {
 				wl_remote_buffer = wayland_tbm_server_get_remote_buffer(NULL, wl_buffer, pos->wl_tbm);
 				if (!wl_remote_buffer) {
 					tbm_surface_h tbm_surface;
-					
+
 					tbm_surface = wayland_tbm_server_get_surface(NULL, wl_buffer);
 					wl_remote_buffer = wayland_tbm_server_export_buffer(NULL, pos->wl_tbm, tbm_surface);
 					SERVER_LOG("export: wl_tbm:%p, tbm_surf:%p, wl_buf:%p\n", pos->wl_tbm, tbm_surface, wl_remote_buffer);
@@ -178,7 +178,7 @@ static const struct wl_test_surface_interface wl_test_surface_impl = {
 	_wl_test_surface_frame_cb
 };
 
-static void 
+static void
 _wl_tbm_test_create_surface(struct wl_client *client,
 			       struct wl_resource *resource,
 			       uint32_t id)
@@ -189,7 +189,7 @@ _wl_tbm_test_create_surface(struct wl_client *client,
 	wl_list_init(&surface->remotes);
 	surface->wl_surface = wl_resource_create(client,
 						&wl_test_surface_interface, 1, id);
-	wl_resource_set_implementation(surface->wl_surface, 
+	wl_resource_set_implementation(surface->wl_surface,
 						&wl_test_surface_impl, surface,
 						_wl_test_surface_destroy);
 }
@@ -234,7 +234,7 @@ _wl_tbm_create_remote_surface(struct wl_client *client,
 									id);
 	wl_resource_set_implementation(remote->wl_remote_surface,
 				&wl_test_remote_impl,
-				remote, 
+				remote,
 				_wl_test_remote_destroy);
 	wl_list_init(&remote->link);
 	wl_list_insert(&provider->remotes, &remote->link);
@@ -290,7 +290,7 @@ main(int argc, char *argv[])
 	gServer.tbm_server = tbm_server;
 	gServer.wl_tbm_test = wl_global_create(dpy, &wl_tbm_test_interface, 1, &gServer,
 					    wl_tbm_test_bind_cb);
-	
+
 	wl_display_run(dpy);
 
 	return 0;

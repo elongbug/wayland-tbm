@@ -231,7 +231,7 @@ wl_tbm_test_update_timer_cb(void *data)
 static void
 wl_tbm_test_idle_cb(void *data)
 {
-#if 0	
+#if 0
 	AppInfo *app = data;
 	AppSurface *app_surface, *tmp;
 	tbm_surface_h back = NULL;

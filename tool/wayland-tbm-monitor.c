@@ -336,9 +336,8 @@ main(int argc, char *argv[])
 
 finish:
 	if (tbm_monitor) {
-		if (tbm_monitor->wl_tbm_monitor) {
+		if (tbm_monitor->wl_tbm_monitor)
 			wl_tbm_monitor_destroy(tbm_monitor->wl_tbm_monitor);
-		}
 
 		free(tbm_monitor);
 	}
