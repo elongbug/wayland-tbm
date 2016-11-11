@@ -51,7 +51,7 @@ extern int bDlog;
 
 #define WL_TBM_C_LOG(fmt, ...) {\
 	if (bDlog) {\
-		LOGE("[WL_TBM_C] " fmt, ##__VA_ARGS__);\
+		LOGI("[WL_TBM_C] " fmt, ##__VA_ARGS__);\
 	} \
 	else {\
 		fprintf(stderr, "[WL_TBM_C(%d):%s] " fmt, getpid(), __func__, ##__VA_ARGS__);\
@@ -59,7 +59,7 @@ extern int bDlog;
 }
 #define WL_TBM_S_LOG(fmt, ...) {\
 	if (bDlog) {\
-		LOGE("[WL_TBM_S] " fmt, ##__VA_ARGS__);\
+		LOGI("[WL_TBM_S] " fmt, ##__VA_ARGS__);\
 	} \
 	else{\
 		fprintf(stderr, "[WL_TBM_S(%d):%s] " fmt, getpid(), __func__, ##__VA_ARGS__);\
@@ -67,7 +67,7 @@ extern int bDlog;
 }
 #define WL_TBM_LOG(fmt, ...) {\
 	if (bDlog) {\
-		LOGE("[WL_TBM] " fmt, ##__VA_ARGS__);\
+		LOGI("[WL_TBM] " fmt, ##__VA_ARGS__);\
 	} \
 	else {\
 		fprintf(stderr, "[WL_TBM(%d)] " fmt, getpid(), ##__VA_ARGS__);\
