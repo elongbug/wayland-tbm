@@ -467,31 +467,31 @@ wayland_tbm_client_create_buffer(struct wayland_tbm_client *tbm_client,
 	WL_TBM_RETURN_VAL_IF_FAIL(tbm_client != NULL, NULL);
 	WL_TBM_RETURN_VAL_IF_FAIL(surface != NULL, NULL);
 
-	int ret = -1;
-	tbm_surface_info_s info;
-	int num_buf;
 	int bufs[TBM_SURF_PLANE_MAX] = { -1, -1, -1, -1};
-	int is_fd = -1;
-	struct wl_buffer *wl_buffer = NULL;
-	int i;
-	uint32_t flags = 0;
-	struct wayland_tbm_buffer *buffer, *tmp;
-	struct wayland_tbm_surface_queue *queue_info = NULL, *tmp_info = NULL;
+	struct wl_buffer *wl_buffer;
+	int num_buf, is_fd = -1, i;
 	char debug_id[64] = {0, };
+	tbm_surface_info_s info;
+	uint32_t flags = 0;
 
-	/* if the surface is the attached surface from display server,
-	* return the wl_buffer of the attached surface
-	*/
+	/*
+	 * if the surface is the attached surface from display server,
+	 * return the wl_buffer of the attached surface
+	 */
 	if (!wl_list_empty(&tbm_client->queue_info_list)) {
-		wl_list_for_each_safe(queue_info, tmp_info, &tbm_client->queue_info_list, link)
-			wl_list_for_each_safe(buffer, tmp, &queue_info->attach_bufs, link) {
+		struct wayland_tbm_surface_queue *queue_info = NULL;
+
+		wl_list_for_each(queue_info, &tbm_client->queue_info_list, link) {
+			struct wayland_tbm_buffer *buffer = NULL;
+
+			wl_list_for_each(buffer, &queue_info->attach_bufs, link) {
 				if (buffer->tbm_surface == surface)
 					return buffer->wl_buffer;
 			}
+		}
 	}
 
-	ret = tbm_surface_get_info(surface, &info);
-	if (ret != TBM_SURFACE_ERROR_NONE) {
+	if (tbm_surface_get_info(surface, &info) != TBM_SURFACE_ERROR_NONE) {
 		WL_TBM_LOG("Failed to create buffer from surface\n");
 		return NULL;
 	}
@@ -504,7 +504,7 @@ wayland_tbm_client_create_buffer(struct wayland_tbm_client *tbm_client,
 	num_buf = tbm_surface_internal_get_num_bos(surface);
 	if (num_buf == 0) {
 		WL_TBM_LOG("surface doesn't have any bo.\n");
-		goto err;
+		return NULL;
 	}
 
 	for (i = 0; i < num_buf; i++) {
@@ -517,14 +517,14 @@ wayland_tbm_client_create_buffer(struct wayland_tbm_client *tbm_client,
 		/* try to get fd first */
 		if (is_fd == -1 || is_fd == 1) {
 			bufs[i] = tbm_bo_export_fd(bo);
-			if (bufs[i] >= 0)
+			if (is_fd == -1 && bufs[i] >= 0)
 				is_fd = 1;
 		}
 
 		/* if fail to get fd, try to get name second */
 		if (is_fd == -1 || is_fd == 0) {
 			bufs[i] = tbm_bo_export(bo);
-			if (bufs[i] > 0)
+			if (is_fd == -1 && bufs[i] > 0)
 				is_fd = 0;
 		}
 
@@ -550,15 +550,15 @@ wayland_tbm_client_create_buffer(struct wayland_tbm_client *tbm_client,
 				(bufs[2] == -1) ? bufs[0] : bufs[2]);
 	else
 		wl_buffer = wl_tbm_create_buffer(tbm_client->wl_tbm,
-						 info.width, info.height, info.format, info.num_planes,
-						 tbm_surface_internal_get_plane_bo_idx(surface, 0),
-						 info.planes[0].offset, info.planes[0].stride,
-						 tbm_surface_internal_get_plane_bo_idx(surface, 1),
-						 info.planes[1].offset, info.planes[1].stride,
-						 tbm_surface_internal_get_plane_bo_idx(surface, 2),
-						 info.planes[2].offset, info.planes[2].stride,
-						 flags,
-						 num_buf, bufs[0], bufs[1], bufs[2]);
+				 info.width, info.height, info.format, info.num_planes,
+				 tbm_surface_internal_get_plane_bo_idx(surface, 0),
+				 info.planes[0].offset, info.planes[0].stride,
+				 tbm_surface_internal_get_plane_bo_idx(surface, 1),
+				 info.planes[1].offset, info.planes[1].stride,
+				 tbm_surface_internal_get_plane_bo_idx(surface, 2),
+				 info.planes[2].offset, info.planes[2].stride,
+				 flags,
+				 num_buf, bufs[0], bufs[1], bufs[2]);
 
 	if (!wl_buffer) {
 		WL_TBM_LOG("Failed to create wl_buffer\n");
@@ -572,11 +572,13 @@ wayland_tbm_client_create_buffer(struct wayland_tbm_client *tbm_client,
 
 	wl_buffer_set_user_data(wl_buffer, surface);
 
-	snprintf(debug_id, sizeof(debug_id), "%u", (unsigned int)wl_proxy_get_id((struct wl_proxy *)wl_buffer));
+	snprintf(debug_id, sizeof(debug_id), "%u",
+		(unsigned int)wl_proxy_get_id((struct wl_proxy *)wl_buffer));
 	tbm_surface_internal_set_debug_data(surface, "id", debug_id);
 
 #ifdef DEBUG_TRACE
-	WL_TBM_TRACE("        pid:%d wl_buffer:%p tbm_surface:%p\n", getpid(), wl_buffer, surface);
+	WL_TBM_TRACE("        pid:%d wl_buffer:%p tbm_surface:%p\n", getpid(),
+			wl_buffer, surface);
 #endif
 
 	return wl_buffer;
