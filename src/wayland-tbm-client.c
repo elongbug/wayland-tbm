@@ -662,40 +662,35 @@ _wayland_tbm_client_surface_queue_flush(struct wayland_tbm_surface_queue *queue_
 
 static tbm_surface_h
 _wayland_tbm_client_create_surface_from_param(tbm_bufmgr bufmgr,
-			 int is_fd,
-			 int32_t width,
-			 int32_t height,
-			 uint32_t format,
-			 int32_t num_plane,
-			 int32_t buf_idx0,
-			 int32_t offset0,
-			 int32_t stride0,
-			 int32_t buf_idx1,
-			 int32_t offset1,
-			 int32_t stride1,
-			 int32_t buf_idx2,
-			 int32_t offset2,
-			 int32_t stride2,
-			 uint32_t flags,
-			 int32_t num_buf,
-			 uint32_t buf0,
-			 uint32_t buf1,
-			 uint32_t buf2)
+							 int is_fd,
+							 int32_t width,
+							 int32_t height,
+							 uint32_t format,
+							 int32_t num_plane,
+							 int32_t buf_idx0,
+							 int32_t offset0,
+							 int32_t stride0,
+							 int32_t buf_idx1,
+							 int32_t offset1,
+							 int32_t stride1,
+							 int32_t buf_idx2,
+							 int32_t offset2,
+							 int32_t stride2,
+							 uint32_t flags,
+							 int32_t num_buf,
+							 uint32_t buf0,
+							 uint32_t buf1,
+							 uint32_t buf2)
 {
-	tbm_surface_h tbm_surface;
-
 	int32_t names[TBM_SURF_PLANE_MAX] = { -1, -1, -1, -1};
+	tbm_surface_info_s info = { 0, };
 	tbm_bo bos[TBM_SURF_PLANE_MAX];
-	tbm_surface_info_s info;
-	int bpp;
-	int numPlane, numName = 0;
-	int i;
+	int bpp, i, numPlane, numName;
+	tbm_surface_h tbm_surface;
 
 	bpp = tbm_surface_internal_get_bpp(format);
 	numPlane = tbm_surface_internal_get_num_planes(format);
 	WL_TBM_RETURN_VAL_IF_FAIL(numPlane == num_plane, NULL);
-
-	memset(&info, 0x0, sizeof(tbm_surface_info_s));
 
 	info.width = width;
 	info.height = height;
@@ -708,18 +703,16 @@ _wayland_tbm_client_create_surface_from_param(tbm_bufmgr bufmgr,
 		info.planes[0].offset = offset0;
 		info.planes[0].stride = stride0;
 		numPlane--;
-	}
-
-	if (numPlane > 0) {
-		info.planes[1].offset = offset1;
-		info.planes[1].stride = stride1;
-		numPlane--;
-	}
-
-	if (numPlane > 0) {
-		info.planes[2].offset = offset2;
-		info.planes[2].stride = stride2;
-		numPlane--;
+		if (numPlane > 0) {
+			info.planes[1].offset = offset1;
+			info.planes[1].stride = stride1;
+			numPlane--;
+			if (numPlane > 0) {
+				info.planes[2].offset = offset2;
+				info.planes[2].stride = stride2;
+				numPlane--;
+			}
+		}
 	}
 
 	/*Fill buffer*/
@@ -734,8 +727,16 @@ _wayland_tbm_client_create_surface_from_param(tbm_bufmgr bufmgr,
 		else
 			bos[i] = tbm_bo_import(bufmgr, names[i]);
 	}
+
 	tbm_surface = tbm_surface_internal_create_with_bos(&info, bos, numName);
-	WL_TBM_RETURN_VAL_IF_FAIL(tbm_surface != NULL, NULL);
+	if (tbm_surface == NULL) {
+		if (is_fd) {
+			close(buf0);
+			close(buf1);
+			close(buf2);
+		}
+		return NULL;
+	}
 
 	if (is_fd) {
 		close(buf0);
