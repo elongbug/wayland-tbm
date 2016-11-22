@@ -328,8 +328,8 @@ const struct wl_tbm_monitor_listener wl_tbm_monitor_listener = {
 
 static void
 _wayland_tbm_client_registry_handle_global(void *data,
-		struct wl_registry *registry, uint32_t name, const char *interface,
-		uint32_t version)
+				struct wl_registry *registry, uint32_t name,
+				const char *interface, uint32_t version)
 {
 	struct wayland_tbm_client *tbm_client = (struct wayland_tbm_client *)data;
 
@@ -340,14 +340,14 @@ _wayland_tbm_client_registry_handle_global(void *data,
 
 		wl_tbm_add_listener(tbm_client->wl_tbm, &wl_tbm_client_listener, tbm_client);
 
-		if (!tbm_client->bufmgr)
-			tbm_client->bufmgr = tbm_bufmgr_init(-1);
-
 		if (!tbm_client->bufmgr) {
-			WL_TBM_LOG("failed to get auth_info\n");
-
-			tbm_client->wl_tbm = NULL;
-			return;
+			tbm_client->bufmgr = tbm_bufmgr_init(-1);
+			if (!tbm_client->bufmgr) {
+				WL_TBM_LOG("failed to get auth_info\n");
+				wl_tbm_destroy(tbm_client->wl_tbm);
+				tbm_client->wl_tbm = NULL;
+				return;
+			}
 		}
 	} else if (!strcmp(interface, "wl_tbm_monitor")) {
 		/*Create wl_monotor proxy by sington*/
@@ -355,7 +355,8 @@ _wayland_tbm_client_registry_handle_global(void *data,
 			return;
 
 		tbm_monitor = wl_registry_bind(registry, name, &wl_tbm_monitor_interface, version);
-		WL_TBM_RETURN_IF_FAIL(tbm_client->wl_tbm != NULL);
+		WL_TBM_RETURN_IF_FAIL(tbm_monitor != NULL);
+
 		wl_proxy_set_queue((struct wl_proxy *)tbm_monitor, NULL);
 
 		wl_tbm_monitor_add_listener(tbm_monitor, &wl_tbm_monitor_listener, tbm_client);
@@ -372,9 +373,9 @@ wayland_tbm_client_init(struct wl_display *display)
 {
 	WL_TBM_RETURN_VAL_IF_FAIL(display != NULL, NULL);
 
-	struct wayland_tbm_client *tbm_client = NULL;
-	struct wl_registry *wl_registry;
+	struct wayland_tbm_client *tbm_client;
 	struct wl_event_queue *wl_queue;
+	struct wl_registry *wl_registry;
 
 	_wayland_tbm_check_dlog_enable();
 
@@ -408,8 +409,8 @@ wayland_tbm_client_init(struct wl_display *display)
 	if (wl_display_roundtrip_queue(display, wl_queue) < 0) {
 		WL_TBM_LOG("Failed to wl_display_roundtrip_queuey\n");
 
-		wl_event_queue_destroy(wl_queue);
 		wl_registry_destroy(wl_registry);
+		wl_event_queue_destroy(wl_queue);
 		free(tbm_client);
 		return NULL;
 	}
@@ -424,9 +425,10 @@ wayland_tbm_client_init(struct wl_display *display)
 		return NULL;
 	}
 
-	/* wl_tbm's queue is destroyed above. We should make wl_tbm's queue to
-	* display's default_queue.
-	*/
+	/*
+	 * wl_tbm's queue is destroyed above. We should make wl_tbm's queue to
+	 * use display's default_queue.
+	 */
 	wl_proxy_set_queue((struct wl_proxy *)tbm_client->wl_tbm, NULL);
 
 	/* queue_info list */
@@ -441,13 +443,13 @@ wayland_tbm_client_deinit(struct wayland_tbm_client *tbm_client)
 	if (!tbm_client)
 		return;
 
+	if (tbm_client->bufmgr)
+		tbm_bufmgr_deinit(tbm_client->bufmgr);
+
 	if (tbm_client->wl_tbm) {
 		wl_tbm_set_user_data(tbm_client->wl_tbm, NULL);
 		wl_tbm_destroy(tbm_client->wl_tbm);
 	}
-
-	if (tbm_client->bufmgr)
-		tbm_bufmgr_deinit(tbm_client->bufmgr);
 
 	if (tbm_monitor
 		&& (tbm_client == wl_tbm_monitor_get_user_data(tbm_monitor))) {
