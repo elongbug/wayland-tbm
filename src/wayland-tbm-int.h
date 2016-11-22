@@ -139,9 +139,6 @@ typedef enum {
 } WL_TBM_MONITOR_TARGET;
 
 /* internal functions */
-struct wl_tbm *
-_wayland_tbm_client_get_wl_tbm(struct wayland_tbm_client *tbm_client);
-
 void
 _wayland_tbm_util_get_appname_brief(char *brief);
 
