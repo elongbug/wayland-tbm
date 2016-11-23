@@ -1108,8 +1108,8 @@ wayland_tbm_server_export_buffer(struct wayland_tbm_server *tbm_srv,
 
 struct wl_resource *
 wayland_tbm_server_get_remote_buffer(struct wayland_tbm_server *tbm_srv,
-								struct wl_resource *wl_buffer,
-								struct wl_resource *wl_tbm)
+						struct wl_resource *wl_buffer,
+						struct wl_resource *wl_tbm)
 {
 	struct wayland_tbm_user_data *ud;
 	struct wayland_tbm_buffer *pos;
@@ -1119,6 +1119,8 @@ wayland_tbm_server_get_remote_buffer(struct wayland_tbm_server *tbm_srv,
 	WL_TBM_RETURN_VAL_IF_FAIL(tbm_surface != NULL, NULL);
 
 	ud = _wayland_tbm_server_get_user_data(tbm_surface);
+	WL_TBM_RETURN_VAL_IF_FAIL(ud != NULL, NULL);
+
 	wl_list_for_each(pos, &ud->wayland_tbm_buffer_list, link_ref) {
 		if (pos->wl_tbm == wl_tbm)
 			return pos->wl_buffer;
@@ -1171,12 +1173,14 @@ wayland_tbm_server_client_queue_deactivate(struct wayland_tbm_client_queue *cque
 }
 
 struct wl_resource *
-wayland_tbm_server_client_queue_export_buffer(struct wayland_tbm_client_queue *cqueue,
-			tbm_surface_h surface, uint32_t flags,
-			wayland_tbm_server_surface_destroy_cb destroy_cb, void *user_data)
+wayland_tbm_server_client_queue_export_buffer(
+				struct wayland_tbm_client_queue *cqueue,
+				tbm_surface_h surface, uint32_t flags,
+				wayland_tbm_server_surface_destroy_cb destroy_cb,
+				void *user_data)
 {
-	struct wl_resource *wl_tbm = NULL;
-	struct wayland_tbm_buffer *tbm_buffer = NULL;
+	struct wayland_tbm_buffer *tbm_buffer;
+	struct wl_resource *wl_tbm;
 	char debug_id[64] = {0, };
 
 	WL_TBM_RETURN_VAL_IF_FAIL(cqueue != NULL, NULL);
@@ -1186,26 +1190,30 @@ wayland_tbm_server_client_queue_export_buffer(struct wayland_tbm_client_queue *c
 	wl_tbm = cqueue->wl_tbm;
 
 	tbm_surface_internal_ref(surface);
-	tbm_buffer = _wayland_tbm_server_tbm_buffer_create(wl_tbm, 0, surface, 0, 0);
+	tbm_buffer = _wayland_tbm_server_tbm_buffer_create(wl_tbm, 0, surface,
+								0, 0);
 	if (tbm_buffer == NULL) {
 		tbm_surface_internal_unref(surface);
 		return NULL;
 	}
+
 	tbm_buffer->destroy_cb = destroy_cb;
 	tbm_buffer->user_data = user_data;
 	tbm_buffer->flags = flags;
 
 	if (!_wayland_tbm_server_export_surface(cqueue->wl_tbm,
-				tbm_buffer->wl_buffer, surface)) {
+						tbm_buffer->wl_buffer,
+						surface)) {
 		WL_TBM_S_LOG("Failed to send the surface to the wl_tbm_queue\n");
 		wl_resource_destroy(tbm_buffer->wl_buffer);
 		tbm_surface_internal_unref(surface);
 		return NULL;
 	}
 
-	wl_tbm_queue_send_buffer_attached(cqueue->wl_tbm_queue, tbm_buffer->wl_buffer, flags);
-
-	snprintf(debug_id, sizeof(debug_id), "%u", (unsigned int)wl_resource_get_id(tbm_buffer->wl_buffer));
+	wl_tbm_queue_send_buffer_attached(cqueue->wl_tbm_queue,
+						tbm_buffer->wl_buffer, flags);
+	snprintf(debug_id, sizeof(debug_id), "%u",
+		(unsigned int)wl_resource_get_id(tbm_buffer->wl_buffer));
 	tbm_surface_internal_set_debug_data(surface, "id", debug_id);
 
 	return tbm_buffer->wl_buffer;
@@ -1228,14 +1236,15 @@ void
 wayland_tbm_server_increase_buffer_sync_timeline(struct wayland_tbm_server *tbm_srv,
 			       struct wl_resource *wl_buffer, unsigned int count)
 {
-	struct wayland_tbm_buffer *tbm_buffer  = NULL;
-
 //	WL_TBM_RETURN_VAL_IF_FAIL(tbm_srv != NULL);
 	WL_TBM_RETURN_IF_FAIL(wl_buffer != NULL);
 
 	if (wl_resource_instance_of(wl_buffer, &wl_buffer_interface,
 				    &_wayland_tbm_buffer_impementation)) {
-		tbm_buffer = wl_resource_get_user_data(wl_buffer);
+		struct wayland_tbm_buffer *tbm_buffer;
+
+		tbm_buffer = (struct wayland_tbm_buffer *)
+					wl_resource_get_user_data(wl_buffer);
 		WL_TBM_RETURN_IF_FAIL(tbm_buffer != NULL);
 
 		if (tbm_buffer->sync_timeline != -1)
@@ -1249,14 +1258,15 @@ int
 wayland_tbm_server_buffer_has_sync_timeline(struct wayland_tbm_server *tbm_srv,
 			       struct wl_resource *wl_buffer)
 {
-	struct wayland_tbm_buffer *tbm_buffer  = NULL;
-
 //	WL_TBM_RETURN_VAL_IF_FAIL(tbm_srv != NULL);
 	WL_TBM_RETURN_VAL_IF_FAIL(wl_buffer != NULL, 0);
 
 	if (wl_resource_instance_of(wl_buffer, &wl_buffer_interface,
 				    &_wayland_tbm_buffer_impementation)) {
-		tbm_buffer = wl_resource_get_user_data(wl_buffer);
+		struct wayland_tbm_buffer *tbm_buffer;
+
+		tbm_buffer = (struct wayland_tbm_buffer *)
+					wl_resource_get_user_data(wl_buffer);
 		WL_TBM_RETURN_VAL_IF_FAIL(tbm_buffer != NULL, 0);
 
 		if (tbm_buffer->sync_timeline != -1)
