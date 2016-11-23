@@ -870,8 +870,7 @@ _wayland_tbm_monitor_bind_cb(struct wl_client *client, void *data,
 
 struct wayland_tbm_server *
 wayland_tbm_server_init(struct wl_display *display, const char *device_name,
-			int fd,
-			uint32_t flags)
+							int fd, uint32_t flags)
 {
 	struct wayland_tbm_server *tbm_srv;
 
@@ -880,30 +879,39 @@ wayland_tbm_server_init(struct wl_display *display, const char *device_name,
 	trace_status = WL_TBM_MONITOR_TRACE_STATUS_UNREGISTERED;
 
 	tbm_srv = calloc(1, sizeof(struct wayland_tbm_server));
-	WL_TBM_RETURN_VAL_IF_FAIL(tbm_srv != NULL, NULL);
+	WL_TBM_RETURN_VAL_IF_FAIL(tbm_srv, NULL);
 
 	tbm_srv->display = display;
 
 	//init bufmgr
 	tbm_srv->bufmgr = tbm_bufmgr_init(-1);
-	if (!tbm_srv->bufmgr) {
-		free(tbm_srv);
-		return NULL;
-	}
+	WL_TBM_GOTO_IF_FAIL(tbm_srv->bufmgr, fail_init_bufmgr);
 
 	tbm_srv->wl_tbm_global = wl_global_create(display, &wl_tbm_interface, 1,
-				 tbm_srv, _wayland_tbm_server_bind_cb);
-
+						 tbm_srv,
+						_wayland_tbm_server_bind_cb);
+	WL_TBM_GOTO_IF_FAIL(tbm_srv->wl_tbm_global, fail_create_tbm_global);
 
 	//init wayland_tbm_client_queue
 	wl_list_init(&tbm_srv->cqueue_list);
 
 	/* init the wl_tbm_monitor*/
-	tbm_srv->wl_tbm_monitor = wl_global_create(display, &wl_tbm_monitor_interface, 1,
-				tbm_srv, _wayland_tbm_monitor_bind_cb);
+	tbm_srv->wl_tbm_monitor = wl_global_create(display,
+					&wl_tbm_monitor_interface, 1, tbm_srv,
+					_wayland_tbm_monitor_bind_cb);
+	WL_TBM_GOTO_IF_FAIL(tbm_srv->wl_tbm_monitor, fail_create_monitor_global);
+
 	wl_list_init(&tbm_srv->tbm_monitor_list);
 
 	return tbm_srv;
+
+fail_create_monitor_global:
+	wl_global_destroy(tbm_srv->wl_tbm_global);
+fail_create_tbm_global:
+	tbm_bufmgr_deinit(tbm_srv->bufmgr);
+fail_init_bufmgr:
+	free(tbm_srv);
+	return NULL;
 }
 
 void
@@ -911,6 +919,7 @@ wayland_tbm_server_deinit(struct wayland_tbm_server *tbm_srv)
 {
 	WL_TBM_RETURN_IF_FAIL(tbm_srv != NULL);
 
+	wl_global_destroy(tbm_srv->wl_tbm_monitor);
 	wl_global_destroy(tbm_srv->wl_tbm_global);
 
 	tbm_bufmgr_deinit(tbm_srv->bufmgr);
