@@ -306,22 +306,25 @@ _wl_tbm_monitor_process_options(struct wayland_tbm_monitor *tbm_monitor,
 int
 main(int argc, char *argv[])
 {
-	struct wayland_tbm_monitor *tbm_monitor = NULL;
-	struct wl_registry *wl_registry;
-	int ret = 0;
+	struct wayland_tbm_monitor *tbm_monitor;
+	struct wl_registry *wl_registry = NULL;
+
+	if (!getenv("XDG_RUNTIME_DIR")) {
+		int ret = setenv("XDG_RUNTIME_DIR", "/run", 1);
+		WL_TBM_RETURN_VAL_IF_FAIL(ret == 0, -1);
+	}
 
 	tbm_monitor = calloc(1, sizeof(struct wayland_tbm_monitor));
 	WL_TBM_RETURN_VAL_IF_FAIL(tbm_monitor != NULL, -1);
 
-	ret = _wl_tbm_monitor_process_options(tbm_monitor, argc, argv);
-	if (!ret)
-		goto finish;
+	if (!_wl_tbm_monitor_process_options(tbm_monitor, argc, argv))
+		goto out;
 
 	tbm_monitor->dpy = wl_display_connect(NULL);
-	WL_TBM_GOTO_IF_FAIL(tbm_monitor->dpy != NULL, finish);
+	WL_TBM_GOTO_IF_FAIL(tbm_monitor->dpy != NULL, out);
 
 	wl_registry = wl_display_get_registry(tbm_monitor->dpy);
-	WL_TBM_GOTO_IF_FAIL(wl_registry != NULL, finish);
+	WL_TBM_GOTO_IF_FAIL(wl_registry != NULL, out);
 
 #ifdef WL_TBM_MONITOR_DEBUG
 	WL_TBM_LOG("[%s]: tbm_monitor=%p, display=%p\n", __func__, tbm_monitor,
@@ -329,19 +332,16 @@ main(int argc, char *argv[])
 #endif
 
 	wl_registry_add_listener(wl_registry, &registry_listener, tbm_monitor);
-	wl_display_dispatch(tbm_monitor->dpy);
 	wl_display_roundtrip(tbm_monitor->dpy);
 
-	wl_registry_destroy(wl_registry);
+out:
+	if (tbm_monitor->wl_tbm_monitor)
+		wl_tbm_monitor_destroy(tbm_monitor->wl_tbm_monitor);
+	if (wl_registry)
+		wl_registry_destroy(wl_registry);
+	if (tbm_monitor->dpy)
+		wl_display_disconnect(tbm_monitor->dpy);
+	free(tbm_monitor);
 
-finish:
-	if (tbm_monitor) {
-		if (tbm_monitor->wl_tbm_monitor)
-			wl_tbm_monitor_destroy(tbm_monitor->wl_tbm_monitor);
-
-		free(tbm_monitor);
-	}
-
-	return 1;
+	return 0;
 }
-
