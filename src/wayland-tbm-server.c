@@ -622,7 +622,7 @@ _wayland_tbm_server_bind_cb(struct wl_client *client, void *data,
 
 static void
 _wayland_tbm_monitor_impl_destroy(struct wl_client *client,
-				struct wl_resource *wl_tbm_monitor)
+					struct wl_resource *wl_tbm_monitor)
 {
 	wl_resource_destroy(wl_tbm_monitor);
 }
@@ -630,52 +630,60 @@ _wayland_tbm_monitor_impl_destroy(struct wl_client *client,
 static void
 _wayland_tbm_server_dump(struct wayland_tbm_server *tbm_srv, WL_TBM_MONITOR_DUMP_COMMAND cmd)
 {
-	if (cmd == WL_TBM_MONITOR_DUMP_COMMAND_SNAPSHOT) {
-		char * path = _wayland_tbm_dump_directory_make();
-		if (path) {
-			tbm_bufmgr_debug_dump_all(path);
-			free(path);
+	switch (cmd) {
+	case WL_TBM_MONITOR_DUMP_COMMAND_SNAPSHOT:
+		{
+			char * path = _wayland_tbm_dump_directory_make();
+			if (path) {
+				tbm_bufmgr_debug_dump_all(path);
+				free(path);
+			}
 		}
-	} else if (cmd == WL_TBM_MONITOR_DUMP_COMMAND_ON) {
+		break;
+	case WL_TBM_MONITOR_DUMP_COMMAND_ON:
 		if (tbm_srv->queue_dump && tbm_srv->path == NULL) {
 			tbm_srv->path = _wayland_tbm_dump_directory_make();
 			if (tbm_srv->path)
 				tbm_bufmgr_debug_queue_dump(tbm_srv->path, 20, 1);
 		}
-	} else if (cmd == WL_TBM_MONITOR_DUMP_COMMAND_OFF) {
+		break;
+	case WL_TBM_MONITOR_DUMP_COMMAND_OFF:
 		if (tbm_srv->path) {
 			tbm_bufmgr_debug_queue_dump(NULL, 0, 0);
 			free(tbm_srv->path);
 			tbm_srv->path = NULL;
 		}
+
 		tbm_srv->queue_dump = 0;
-	} else if (cmd == WL_TBM_MONITOR_DUMP_COMMAND_QUEUE) {
+		break;
+	case WL_TBM_MONITOR_DUMP_COMMAND_QUEUE:
 		tbm_srv->queue_dump = 1;
+		break;
+	default:
+		break;
 	}
 }
 
 static void
 _wayland_tbm_monitor_impl_tbm_monitor(struct wl_client *client,
-				    struct wl_resource *resource,
-				    int32_t command,
-				    int32_t subcommand,
-				    int32_t target,
-				    int32_t pid)
+					    struct wl_resource *resource,
+					    int32_t command, int32_t subcommand,
+					    int32_t target, int32_t pid)
 {
-	struct wayland_tbm_server *tbm_srv = wl_resource_get_user_data(resource);
-	struct wl_resource *c_res = NULL, *tmp_res = NULL;
-	int i = 0;
-	char app_name[256];
-
+	struct wayland_tbm_server *tbm_srv =
+		(struct wayland_tbm_server *)wl_resource_get_user_data(resource);
+	struct wl_resource *c_res = NULL;
 	struct wl_client *wl_client;
+	char app_name[256];
 	pid_t c_pid;
+	int i = 0;
 
 	if (command == WL_TBM_MONITOR_COMMAND_LIST) {
 		WL_TBM_DEBUG("==================  app list	 =======================\n");
 		WL_TBM_DEBUG("no pid  app_name\n");
 
 		if (!wl_list_empty(&tbm_srv->tbm_monitor_list)) {
-			wl_resource_for_each_safe(c_res, tmp_res, &tbm_srv->tbm_monitor_list) {
+			wl_resource_for_each(c_res, &tbm_srv->tbm_monitor_list) {
 				if (c_res == resource)
 					continue;
 
@@ -694,92 +702,123 @@ _wayland_tbm_monitor_impl_tbm_monitor(struct wl_client *client,
 		return;
 	}
 
-	if (target == WL_TBM_MONITOR_TARGET_CLIENT) {
+	switch (target) {
+	case WL_TBM_MONITOR_TARGET_CLIENT:
 		if (pid < 1) {
-			wl_resource_post_error(resource, WL_TBM_ERROR_INVALID_FORMAT, "invalid format");
+			wl_resource_post_error(resource,
+						WL_TBM_ERROR_INVALID_FORMAT,
+						"invalid format");
 			return;
 		}
+
 		/* send the events to all client containing wl_tbm resource except for the wayland-tbm-monitor(requestor). */
 		if (!wl_list_empty(&tbm_srv->tbm_monitor_list)) {
-			wl_resource_for_each_safe(c_res, tmp_res, &tbm_srv->tbm_monitor_list) {
+			wl_resource_for_each(c_res, &tbm_srv->tbm_monitor_list) {
 				/* skip the requestor (wayland-tbm-monitor */
 				if (c_res == resource)
 					continue;
 
 				wl_client = wl_resource_get_client(c_res);
-				wl_client_get_credentials(wl_client, &c_pid, NULL, NULL);
+				wl_client_get_credentials(wl_client, &c_pid,
+								NULL, NULL);
 				if (c_pid != pid)
 					continue;
 
-				wl_tbm_monitor_send_monitor_client_tbm_bo(c_res, command, subcommand,
-								  target, pid);
+				wl_tbm_monitor_send_monitor_client_tbm_bo(c_res,
+							command, subcommand,
+							target, pid);
 			}
 		}
-	} else if (target == WL_TBM_MONITOR_TARGET_SERVER) {
-		if (command == WL_TBM_MONITOR_COMMAND_SHOW) {
+		break;
+	case WL_TBM_MONITOR_TARGET_SERVER:
+		switch (command) {
+		case WL_TBM_MONITOR_COMMAND_SHOW:
 			tbm_bufmgr_debug_show(tbm_srv->bufmgr);
-		} else if (command == WL_TBM_MONITOR_COMMAND_TRACE) {
+			break;
+		case WL_TBM_MONITOR_COMMAND_TRACE:
 			if (subcommand == WL_TBM_MONITOR_TRACE_COMMAND_STATUS)
 				WL_TBM_DEBUG("server: trace status: %s\n",
-							_tarce_status_to_str(trace_status));
+						_tarce_status_to_str(trace_status));
 			else
-				_change_trace_status(&trace_status, subcommand, tbm_srv->bufmgr);
-		} else if (command == WL_TBM_MONITOR_COMMAND_DUMP) {
+				_change_trace_status(&trace_status, subcommand,
+							tbm_srv->bufmgr);
+			break;
+		case WL_TBM_MONITOR_COMMAND_DUMP:
 			_wayland_tbm_server_dump(tbm_srv, subcommand);
-		} else
-			wl_resource_post_error(resource, WL_TBM_ERROR_INVALID_FORMAT,
-					       "invalid format");
-	} else if (target == WL_TBM_MONITOR_TARGET_ALL) {
-		if (command == WL_TBM_MONITOR_COMMAND_SHOW) {
+			break;
+		default:
+			wl_resource_post_error(resource,
+						WL_TBM_ERROR_INVALID_FORMAT,
+						"invalid format");
+			break;
+		}
+		break;
+	case WL_TBM_MONITOR_TARGET_ALL:
+		switch (command) {
+		case WL_TBM_MONITOR_COMMAND_SHOW:
 			/* send the events to all client containing wl_tbm resource except for the wayland-tbm-monitor(requestor). */
 			if (!wl_list_empty(&tbm_srv->tbm_monitor_list)) {
-				wl_resource_for_each_safe(c_res, tmp_res, &tbm_srv->tbm_monitor_list) {
+				wl_resource_for_each(c_res, &tbm_srv->tbm_monitor_list) {
 					/* skip the requestor (wayland-tbm-monitor */
 					if (c_res == resource)
 						continue;
 
-					wl_tbm_monitor_send_monitor_client_tbm_bo(c_res, command, subcommand,
-									  target, pid);
+					wl_tbm_monitor_send_monitor_client_tbm_bo(c_res,
+							command, subcommand,
+							target, pid);
 				}
 			}
+
 			tbm_bufmgr_debug_show(tbm_srv->bufmgr);
-		} else if (command == WL_TBM_MONITOR_COMMAND_TRACE) {
+			break;
+		case WL_TBM_MONITOR_COMMAND_TRACE:
 			/* send the events to all client containing wl_tbm resource except for the wayland-tbm-monitor(requestor). */
 			if (!wl_list_empty(&tbm_srv->tbm_monitor_list)) {
-				wl_resource_for_each_safe(c_res, tmp_res, &tbm_srv->tbm_monitor_list) {
+				wl_resource_for_each(c_res, &tbm_srv->tbm_monitor_list) {
 					/* skip the requestor (wayland-tbm-monitor */
 					if (c_res == resource)
 						continue;
 
-					wl_tbm_monitor_send_monitor_client_tbm_bo(c_res, command, subcommand,
-									  target, pid);
+					wl_tbm_monitor_send_monitor_client_tbm_bo(c_res,
+							command, subcommand,
+							target, pid);
 				}
 			}
+
 			if (subcommand == WL_TBM_MONITOR_TRACE_COMMAND_STATUS)
 				WL_TBM_DEBUG("server: trace status: %s\n",
-							_tarce_status_to_str(trace_status));
+					_tarce_status_to_str(trace_status));
 			else
-				_change_trace_status(&trace_status, subcommand, tbm_srv->bufmgr);
-		} else if (command == WL_TBM_MONITOR_COMMAND_DUMP) {
+				_change_trace_status(&trace_status, subcommand,
+							tbm_srv->bufmgr);
+			break;
+		case WL_TBM_MONITOR_COMMAND_DUMP:
 			if (!wl_list_empty(&tbm_srv->tbm_monitor_list)) {
-				wl_resource_for_each_safe(c_res, tmp_res, &tbm_srv->tbm_monitor_list) {
+				wl_resource_for_each(c_res, &tbm_srv->tbm_monitor_list) {
 					/* skip the requestor (wayland-tbm-monitor */
 					if (c_res == resource)
 						continue;
 
-					wl_tbm_monitor_send_monitor_client_tbm_bo(c_res, command, subcommand,
-									  target, pid);
+					wl_tbm_monitor_send_monitor_client_tbm_bo(c_res,
+							command, subcommand,
+							target, pid);
 				}
 			}
+
 			_wayland_tbm_server_dump(tbm_srv, subcommand);
-		} else
-			wl_resource_post_error(resource, WL_TBM_ERROR_INVALID_FORMAT,
+			break;
+		default:
+			wl_resource_post_error(resource,
+						WL_TBM_ERROR_INVALID_FORMAT,
 					       "invalid format");
-	} else {
+			break;
+		}
+		break;
+	default:
 		wl_resource_post_error(resource, WL_TBM_ERROR_INVALID_FORMAT,
 				       "invalid format");
+		break;
 	}
-
 }
 
 static const struct wl_tbm_monitor_interface _wayland_tbm_monitor_implementation = {
