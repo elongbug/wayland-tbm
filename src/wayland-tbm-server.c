@@ -114,12 +114,15 @@ struct wayland_tbm_user_data {
 static void
 _wayland_tbm_server_free_user_data(void *user_data)
 {
-	struct wayland_tbm_user_data *ud = user_data;
+	struct wayland_tbm_user_data *ud =
+				(struct wayland_tbm_user_data *)user_data;
 
 	//check validation and report
 	if (!wl_list_empty(&ud->wayland_tbm_buffer_list)) {
 		struct wayland_tbm_buffer *pos, *tmp;
-		wl_list_for_each_safe(pos, tmp, &ud->wayland_tbm_buffer_list, link_ref) {
+
+		wl_list_for_each_safe(pos, tmp, &ud->wayland_tbm_buffer_list,
+								link_ref) {
 			WL_TBM_S_LOG("Error: wl_buffer(%p) still alive tbm_surface:%p\n",
 						pos->wl_buffer, pos->surface);
 
@@ -134,24 +137,39 @@ _wayland_tbm_server_free_user_data(void *user_data)
 static struct wayland_tbm_user_data *
 _wayland_tbm_server_get_user_data(tbm_surface_h tbm_surface)
 {
-	static const int key_ud;
 	struct wayland_tbm_user_data *ud = NULL;
+	static const int key_ud;
 
-	tbm_surface_internal_get_user_data(tbm_surface,
-					(unsigned long)&key_ud,
-					(void**)&ud);
+	tbm_surface_internal_get_user_data(tbm_surface, (unsigned long)&key_ud,
+								(void**)&ud);
 	if (!ud) {
 		ud = calloc(1, sizeof(struct wayland_tbm_user_data));
-		tbm_surface_internal_add_user_data(tbm_surface,
+		WL_TBM_RETURN_VAL_IF_FAIL(ud != NULL, NULL);
+
+		if (!tbm_surface_internal_add_user_data(tbm_surface,
+					(unsigned long)&key_ud,
+					_wayland_tbm_server_free_user_data)) {
+			WL_TBM_S_LOG("Fail to create user data for surface %p\n",
+					tbm_surface);
+			goto out;
+		}
+
+		if (!tbm_surface_internal_set_user_data(tbm_surface,
 							(unsigned long)&key_ud,
-							_wayland_tbm_server_free_user_data);
-		tbm_surface_internal_set_user_data(tbm_surface,
-							(unsigned long)&key_ud,
-							(void*)ud);
+							(void*)ud)) {
+			WL_TBM_S_LOG("Fail to set user data for surface %p\n",
+					tbm_surface);
+			goto out;
+		}
+
 		wl_list_init(&ud->wayland_tbm_buffer_list);
 	}
 
 	return ud;
+
+out:
+	free(ud);
+	return NULL;
 }
 
 static void
