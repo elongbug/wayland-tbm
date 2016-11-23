@@ -70,7 +70,7 @@ struct wayland_tbm_server {
 	struct wl_list cqueue_list; /* for scanout buffer */
 	struct wl_list tbm_monitor_list; /* for tbm monitor */
 
-	char * path;
+	char *path;
 	int queue_dump;
 };
 
@@ -155,6 +155,23 @@ _wayland_tbm_server_get_user_data(tbm_surface_h tbm_surface)
 }
 
 static void
+_wayland_tbm_server_tbm_buffer_impl_destroy(struct wl_client *client, struct wl_resource *wl_buffer)
+{
+#ifdef DEBUG_TRACE
+	pid_t pid;
+
+	wl_client_get_credentials(client, &pid, NULL, NULL);
+	WL_TBM_TRACE("   pid:%d wl_buffer destoroy.\n", pid);
+#endif
+
+	wl_resource_destroy(wl_buffer);
+}
+
+static const struct wl_buffer_interface _wayland_tbm_buffer_impementation = {
+	_wayland_tbm_server_tbm_buffer_impl_destroy
+};
+
+static void
 _wayland_tbm_server_buffer_destory(struct wl_resource *wl_buffer)
 {
 	struct wayland_tbm_buffer *tbm_buffer = wl_resource_get_user_data(wl_buffer);
@@ -180,22 +197,6 @@ _wayland_tbm_server_buffer_destory(struct wl_resource *wl_buffer)
 	tbm_surface_internal_unref(tbm_buffer->surface);
 	free(tbm_buffer);
 }
-
-static void
-_wayland_tbm_server_tbm_buffer_impl_destroy(struct wl_client *client, struct wl_resource *wl_buffer)
-{
-#ifdef DEBUG_TRACE
-	pid_t pid = 0;
-	wl_client_get_credentials(client, &pid, NULL, NULL);
-	WL_TBM_TRACE("   pid:%d wl_buffer destoroy.\n", pid);
-#endif
-
-	wl_resource_destroy(wl_buffer);
-}
-
-static const struct wl_buffer_interface _wayland_tbm_buffer_impementation = {
-	_wayland_tbm_server_tbm_buffer_impl_destroy
-};
 
 static struct wayland_tbm_buffer *
 _wayland_tbm_server_tbm_buffer_create(struct wl_resource *wl_tbm,
@@ -242,80 +243,6 @@ _wayland_tbm_server_tbm_buffer_create(struct wl_resource *wl_tbm,
 	tbm_buffer->sync_timeline = -1;
 
 	return tbm_buffer;
-}
-
-static void
-_wayland_tbm_server_surface_queue_destroy(struct wl_resource *wl_tbm_queue)
-{
-	struct wayland_tbm_client_queue *cqueue = wl_resource_get_user_data(wl_tbm_queue);
-
-	if (cqueue) {
-#ifdef DEBUG_TRACE
-		WL_TBM_TRACE("destory queue. pid:%d\n", cqueue->pid);
-#endif
-		wl_list_remove(&cqueue->link);
-		free(cqueue);
-
-		wl_resource_set_user_data(wl_tbm_queue, NULL);
-	}
-}
-
-static void
-_wayland_tbm_server_queue_impl_destroy(struct wl_client *client,
-				struct wl_resource *wl_tbm_queue)
-{
-#ifdef DEBUG_TRACE
-	pid_t pid = 0;
-	wl_client_get_credentials(client, &pid, NULL, NULL);
-	WL_TBM_TRACE("wl_tbm_queue destory. pid:%d\n", pid);
-#endif
-
-	wl_resource_destroy(wl_tbm_queue);
-}
-
-static void
-_wayland_tbm_server_queue_impl_detach_buffer(struct wl_client *client,
-				      struct wl_resource *wl_tbm_queue,
-				      struct wl_resource *wl_buffer)
-{
-#ifdef DEBUG_TRACE
-	pid_t pid = 0;
-	wl_client_get_credentials(client, &pid, NULL, NULL);
-	WL_TBM_TRACE("detach buffer. pid:%d\n", pid);
-#endif
-
-}
-
-static const struct wl_tbm_queue_interface _wayland_tbm_queue_impementation = {
-	_wayland_tbm_server_queue_impl_destroy,
-	_wayland_tbm_server_queue_impl_detach_buffer,
-};
-
-static void
-_wayland_tbm_server_dump(struct wayland_tbm_server *tbm_srv, WL_TBM_MONITOR_DUMP_COMMAND cmd)
-{
-	if (cmd == WL_TBM_MONITOR_DUMP_COMMAND_SNAPSHOT) {
-		char * path = _wayland_tbm_dump_directory_make();
-		if (path) {
-			tbm_bufmgr_debug_dump_all(path);
-			free(path);
-		}
-	} else if (cmd == WL_TBM_MONITOR_DUMP_COMMAND_ON) {
-		if (tbm_srv->queue_dump && tbm_srv->path == NULL) {
-			tbm_srv->path = _wayland_tbm_dump_directory_make();
-			if (tbm_srv->path)
-				tbm_bufmgr_debug_queue_dump(tbm_srv->path, 20, 1);
-		}
-	} else if (cmd == WL_TBM_MONITOR_DUMP_COMMAND_OFF) {
-		if (tbm_srv->path) {
-			tbm_bufmgr_debug_queue_dump(NULL, 0, 0);
-			free(tbm_srv->path);
-			tbm_srv->path = NULL;
-		}
-		tbm_srv->queue_dump = 0;
-	} else if (cmd == WL_TBM_MONITOR_DUMP_COMMAND_QUEUE) {
-		tbm_srv->queue_dump = 1;
-	}
 }
 
 static void
@@ -497,6 +424,54 @@ done:
 }
 
 static void
+_wayland_tbm_server_queue_impl_destroy(struct wl_client *client,
+				struct wl_resource *wl_tbm_queue)
+{
+#ifdef DEBUG_TRACE
+	pid_t pid;
+
+	wl_client_get_credentials(client, &pid, NULL, NULL);
+	WL_TBM_TRACE("wl_tbm_queue destory. pid:%d\n", pid);
+#endif
+
+	wl_resource_destroy(wl_tbm_queue);
+}
+
+static void
+_wayland_tbm_server_queue_impl_detach_buffer(struct wl_client *client,
+				      struct wl_resource *wl_tbm_queue,
+				      struct wl_resource *wl_buffer)
+{
+#ifdef DEBUG_TRACE
+	pid_t pid;
+
+	wl_client_get_credentials(client, &pid, NULL, NULL);
+	WL_TBM_TRACE("detach buffer. pid:%d\n", pid);
+#endif
+}
+
+static const struct wl_tbm_queue_interface _wayland_tbm_queue_impementation = {
+	_wayland_tbm_server_queue_impl_destroy,
+	_wayland_tbm_server_queue_impl_detach_buffer,
+};
+
+static void
+_wayland_tbm_server_surface_queue_destroy(struct wl_resource *wl_tbm_queue)
+{
+	struct wayland_tbm_client_queue *cqueue = wl_resource_get_user_data(wl_tbm_queue);
+
+	if (cqueue) {
+#ifdef DEBUG_TRACE
+		WL_TBM_TRACE("destory queue. pid:%d\n", cqueue->pid);
+#endif
+		wl_list_remove(&cqueue->link);
+		free(cqueue);
+
+		wl_resource_set_user_data(wl_tbm_queue, NULL);
+	}
+}
+
+static void
 _wayland_tbm_server_impl_create_surface_queue(struct wl_client *client,
 		struct wl_resource *wl_tbm,
 		uint32_t surface_queue,
@@ -574,6 +549,85 @@ static const struct wl_tbm_interface _wayland_tbm_server_implementation = {
 	_wayland_tbm_server_impl_set_sync_timeline,
 	_wayland_tbm_server_impl_destroy
 };
+
+static void
+_wayland_tbm_server_destroy_resource(struct wl_resource *wl_tbm)
+{
+	struct wayland_tbm_server *tbm_srv = NULL;
+
+#ifdef DEBUG_TRACE
+	pid_t pid;
+	wl_client_get_credentials(wl_resource_get_client(wl_tbm), &pid, NULL, NULL);
+	WL_TBM_S_LOG("wl_tbm_monitor destroy. client=%d\n", pid);
+#endif
+
+	/* remove the client resources to the list */
+	tbm_srv = wl_resource_get_user_data(wl_tbm);
+	if (!tbm_srv) return;
+
+	/* remove the queue resources */
+	// TODO:
+}
+
+static void
+_wayland_tbm_server_bind_cb(struct wl_client *client, void *data,
+			    uint32_t version,
+			    uint32_t id)
+{
+	struct wl_resource *wl_tbm;
+
+	wl_tbm = wl_resource_create(client, &wl_tbm_interface, MIN(version, 1), id);
+	if (!wl_tbm) {
+		wl_client_post_no_memory(client);
+		return;
+	}
+
+	wl_resource_set_implementation(wl_tbm,
+				       &_wayland_tbm_server_implementation,
+				       data,
+				       _wayland_tbm_server_destroy_resource);
+
+#ifdef DEBUG_TRACE
+	pid_t pid;
+
+	wl_client_get_credentials(client, &pid, NULL, NULL);
+	WL_TBM_S_LOG("wl_tbm bind. client=%d\n", pid);
+#endif
+}
+
+static void
+_wayland_tbm_monitor_impl_destroy(struct wl_client *client,
+				struct wl_resource *wl_tbm_monitor)
+{
+	wl_resource_destroy(wl_tbm_monitor);
+}
+
+static void
+_wayland_tbm_server_dump(struct wayland_tbm_server *tbm_srv, WL_TBM_MONITOR_DUMP_COMMAND cmd)
+{
+	if (cmd == WL_TBM_MONITOR_DUMP_COMMAND_SNAPSHOT) {
+		char * path = _wayland_tbm_dump_directory_make();
+		if (path) {
+			tbm_bufmgr_debug_dump_all(path);
+			free(path);
+		}
+	} else if (cmd == WL_TBM_MONITOR_DUMP_COMMAND_ON) {
+		if (tbm_srv->queue_dump && tbm_srv->path == NULL) {
+			tbm_srv->path = _wayland_tbm_dump_directory_make();
+			if (tbm_srv->path)
+				tbm_bufmgr_debug_queue_dump(tbm_srv->path, 20, 1);
+		}
+	} else if (cmd == WL_TBM_MONITOR_DUMP_COMMAND_OFF) {
+		if (tbm_srv->path) {
+			tbm_bufmgr_debug_queue_dump(NULL, 0, 0);
+			free(tbm_srv->path);
+			tbm_srv->path = NULL;
+		}
+		tbm_srv->queue_dump = 0;
+	} else if (cmd == WL_TBM_MONITOR_DUMP_COMMAND_QUEUE) {
+		tbm_srv->queue_dump = 1;
+	}
+}
 
 static void
 _wayland_tbm_monitor_impl_tbm_monitor(struct wl_client *client,
@@ -703,68 +757,19 @@ _wayland_tbm_monitor_impl_tbm_monitor(struct wl_client *client,
 
 }
 
-static void
-_wayland_tbm_monitor_impl_destroy(struct wl_client *client,
-				struct wl_resource *wl_tbm_monitor)
-{
-	wl_resource_destroy(wl_tbm_monitor);
-}
-
 static const struct wl_tbm_monitor_interface _wayland_tbm_monitor_implementation = {
 	_wayland_tbm_monitor_impl_destroy,
 	_wayland_tbm_monitor_impl_tbm_monitor
 };
 
 static void
-_wayland_tbm_server_destroy_resource(struct wl_resource *wl_tbm)
-{
-	struct wayland_tbm_server *tbm_srv = NULL;
-
-#ifdef DEBUG_TRACE
-	pid_t pid;
-	wl_client_get_credentials(wl_resource_get_client(wl_tbm), &pid, NULL, NULL);
-	WL_TBM_S_LOG("wl_tbm_monitor destroy. client=%d\n", pid);
-#endif
-
-	/* remove the client resources to the list */
-	tbm_srv = wl_resource_get_user_data(wl_tbm);
-	if (!tbm_srv) return;
-
-	/* remove the queue resources */
-	// TODO:
-}
-
-static void
-_wayland_tbm_server_bind_cb(struct wl_client *client, void *data,
-			    uint32_t version,
-			    uint32_t id)
-{
-	struct wl_resource *wl_tbm;
-
-	wl_tbm = wl_resource_create(client, &wl_tbm_interface, MIN(version, 1), id);
-	if (!wl_tbm) {
-		wl_client_post_no_memory(client);
-		return;
-	}
-
-	wl_resource_set_implementation(wl_tbm,
-				       &_wayland_tbm_server_implementation,
-				       data,
-				       _wayland_tbm_server_destroy_resource);
-
-#ifdef DEBUG_TRACE
-	pid_t pid = 0;
-	wl_client_get_credentials(client, &pid, NULL, NULL);
-	WL_TBM_S_LOG("wl_tbm bind. client=%d\n", pid);
-#endif
-}
-
-static void
 _wayland_tbm_monitor_destroy_resource(struct wl_resource *wl_tbm_monitor)
 {
 #ifdef DEBUG_TRACE
-	pid_t pid = 0;
-	wl_client_get_credentials(wl_resource_get_client(wl_tbm_monitor), &pid, NULL, NULL);
+	pid_t pid;
+
+	wl_client_get_credentials(wl_resource_get_client(wl_tbm_monitor), &pid,
+								NULL, NULL);
 	WL_TBM_S_LOG("wl_tbm_monitor destroy. client=%d\n", pid);
 #endif
 
@@ -792,10 +797,104 @@ _wayland_tbm_monitor_bind_cb(struct wl_client *client, void *data,
 	wl_list_insert(&tbm_srv->tbm_monitor_list, wl_resource_get_link(wl_tbm_monitor));
 
 #ifdef DEBUG_TRACE
-		pid_t pid = 0;
-		wl_client_get_credentials(client, &pid, NULL, NULL);
-		WL_TBM_S_LOG("wl_tbm_monitor bind. client=%d\n", pid);
+	pid_t pid;
+
+	wl_client_get_credentials(client, &pid, NULL, NULL);
+	WL_TBM_S_LOG("wl_tbm_monitor bind. client=%d\n", pid);
 #endif
+}
+
+struct wayland_tbm_server *
+wayland_tbm_server_init(struct wl_display *display, const char *device_name,
+			int fd,
+			uint32_t flags)
+{
+	struct wayland_tbm_server *tbm_srv;
+
+	_wayland_tbm_check_dlog_enable();
+
+	trace_status = WL_TBM_MONITOR_TRACE_STATUS_UNREGISTERED;
+
+	tbm_srv = calloc(1, sizeof(struct wayland_tbm_server));
+	WL_TBM_RETURN_VAL_IF_FAIL(tbm_srv != NULL, NULL);
+
+	tbm_srv->display = display;
+
+	//init bufmgr
+	tbm_srv->bufmgr = tbm_bufmgr_init(-1);
+	if (!tbm_srv->bufmgr) {
+		free(tbm_srv);
+		return NULL;
+	}
+
+	tbm_srv->wl_tbm_global = wl_global_create(display, &wl_tbm_interface, 1,
+				 tbm_srv, _wayland_tbm_server_bind_cb);
+
+
+	//init wayland_tbm_client_queue
+	wl_list_init(&tbm_srv->cqueue_list);
+
+	/* init the wl_tbm_monitor*/
+	tbm_srv->wl_tbm_monitor = wl_global_create(display, &wl_tbm_monitor_interface, 1,
+				tbm_srv, _wayland_tbm_monitor_bind_cb);
+	wl_list_init(&tbm_srv->tbm_monitor_list);
+
+	return tbm_srv;
+}
+
+void
+wayland_tbm_server_deinit(struct wayland_tbm_server *tbm_srv)
+{
+	WL_TBM_RETURN_IF_FAIL(tbm_srv != NULL);
+
+	wl_global_destroy(tbm_srv->wl_tbm_global);
+
+	tbm_bufmgr_deinit(tbm_srv->bufmgr);
+
+	free(tbm_srv);
+}
+
+void *
+wayland_tbm_server_get_bufmgr(struct wayland_tbm_server *tbm_srv)
+{
+	WL_TBM_RETURN_VAL_IF_FAIL(tbm_srv != NULL, NULL);
+
+	return (void *)tbm_srv->bufmgr;
+}
+
+tbm_surface_h
+wayland_tbm_server_get_surface(struct wayland_tbm_server *tbm_srv,
+			       struct wl_resource *wl_buffer)
+{
+	struct wayland_tbm_buffer *tbm_buffer  = NULL;
+
+//	WL_TBM_RETURN_VAL_IF_FAIL(tbm_srv != NULL, NULL);
+	WL_TBM_RETURN_VAL_IF_FAIL(wl_buffer != NULL, NULL);
+
+	if (wl_resource_instance_of(wl_buffer, &wl_buffer_interface,
+				    &_wayland_tbm_buffer_impementation)) {
+		tbm_buffer = wl_resource_get_user_data(wl_buffer);
+		return tbm_buffer->surface;
+	}
+
+	return NULL;
+}
+
+uint32_t
+wayland_tbm_server_get_buffer_flags(struct wayland_tbm_server *tbm_srv,
+					struct wl_resource *wl_buffer)
+{
+	struct wayland_tbm_buffer *tbm_buffer  = NULL;
+
+	WL_TBM_RETURN_VAL_IF_FAIL(wl_buffer != NULL, 0);
+
+	if (wl_resource_instance_of(wl_buffer, &wl_buffer_interface,
+				    &_wayland_tbm_buffer_impementation)) {
+		tbm_buffer = wl_resource_get_user_data(wl_buffer);
+		return tbm_buffer->flags;
+	}
+
+	return 0;
 }
 
 int
@@ -897,126 +996,36 @@ err:
 	return 0;
 }
 
-struct wayland_tbm_server *
-wayland_tbm_server_init(struct wl_display *display, const char *device_name,
-			int fd,
-			uint32_t flags)
-{
-	struct wayland_tbm_server *tbm_srv;
-
-	_wayland_tbm_check_dlog_enable();
-
-	trace_status = WL_TBM_MONITOR_TRACE_STATUS_UNREGISTERED;
-
-	tbm_srv = calloc(1, sizeof(struct wayland_tbm_server));
-	WL_TBM_RETURN_VAL_IF_FAIL(tbm_srv != NULL, NULL);
-
-	tbm_srv->display = display;
-
-	//init bufmgr
-	tbm_srv->bufmgr = tbm_bufmgr_init(-1);
-	if (!tbm_srv->bufmgr) {
-		free(tbm_srv);
-		return NULL;
-	}
-
-	tbm_srv->wl_tbm_global = wl_global_create(display, &wl_tbm_interface, 1,
-				 tbm_srv, _wayland_tbm_server_bind_cb);
-
-
-	//init wayland_tbm_client_queue
-	wl_list_init(&tbm_srv->cqueue_list);
-
-	/* init the wl_tbm_monitor*/
-	tbm_srv->wl_tbm_monitor = wl_global_create(display, &wl_tbm_monitor_interface, 1,
-				tbm_srv, _wayland_tbm_monitor_bind_cb);
-	wl_list_init(&tbm_srv->tbm_monitor_list);
-
-	return tbm_srv;
-}
-
-void
-wayland_tbm_server_deinit(struct wayland_tbm_server *tbm_srv)
-{
-	WL_TBM_RETURN_IF_FAIL(tbm_srv != NULL);
-
-	wl_global_destroy(tbm_srv->wl_tbm_global);
-
-	tbm_bufmgr_deinit(tbm_srv->bufmgr);
-
-	free(tbm_srv);
-}
-
-tbm_surface_h
-wayland_tbm_server_get_surface(struct wayland_tbm_server *tbm_srv,
-			       struct wl_resource *wl_buffer)
-{
-	struct wayland_tbm_buffer *tbm_buffer  = NULL;
-
-//	WL_TBM_RETURN_VAL_IF_FAIL(tbm_srv != NULL, NULL);
-	WL_TBM_RETURN_VAL_IF_FAIL(wl_buffer != NULL, NULL);
-
-	if (wl_resource_instance_of(wl_buffer, &wl_buffer_interface,
-				    &_wayland_tbm_buffer_impementation)) {
-		tbm_buffer = wl_resource_get_user_data(wl_buffer);
-		return tbm_buffer->surface;
-	}
-
-	return NULL;
-}
-
-void *
-wayland_tbm_server_get_bufmgr(struct wayland_tbm_server *tbm_srv)
-{
-	WL_TBM_RETURN_VAL_IF_FAIL(tbm_srv != NULL, NULL);
-
-	return (void *)tbm_srv->bufmgr;
-}
-
-uint32_t
-wayland_tbm_server_get_buffer_flags(struct wayland_tbm_server *tbm_srv,
-					struct wl_resource *wl_buffer)
-{
-	struct wayland_tbm_buffer *tbm_buffer  = NULL;
-
-	WL_TBM_RETURN_VAL_IF_FAIL(wl_buffer != NULL, 0);
-
-	if (wl_resource_instance_of(wl_buffer, &wl_buffer_interface,
-				    &_wayland_tbm_buffer_impementation)) {
-		tbm_buffer = wl_resource_get_user_data(wl_buffer);
-		return tbm_buffer->flags;
-	}
-
-	return 0;
-}
-
 struct wl_resource *
 wayland_tbm_server_export_buffer(struct wayland_tbm_server *tbm_srv,
-							struct wl_resource *wl_tbm,
-							tbm_surface_h surface)
+						struct wl_resource *wl_tbm,
+						tbm_surface_h surface)
 {
-	struct wayland_tbm_buffer *tbm_buffer = NULL;
+	struct wayland_tbm_buffer *tbm_buffer;
 	char debug_id[64] = {0, };
 
 	WL_TBM_RETURN_VAL_IF_FAIL(wl_tbm != NULL, NULL);
 	WL_TBM_RETURN_VAL_IF_FAIL(surface != NULL, NULL);
 
 	tbm_surface_internal_ref(surface);
-	tbm_buffer = _wayland_tbm_server_tbm_buffer_create(wl_tbm, 0, surface, 0, 0);
+	tbm_buffer = _wayland_tbm_server_tbm_buffer_create(wl_tbm, 0, surface,
+								0, 0);
 	if (tbm_buffer == NULL) {
 		tbm_surface_internal_unref(surface);
 		return NULL;
 	}
 
 	if (!_wayland_tbm_server_export_surface(wl_tbm,
-				tbm_buffer->wl_buffer, surface)) {
+						tbm_buffer->wl_buffer,
+						surface)) {
 		WL_TBM_S_LOG("Failed to send the surface to the wl_tbm_queue\n");
 		wl_resource_destroy(tbm_buffer->wl_buffer);
 		tbm_surface_internal_unref(surface);
 		return NULL;
 	}
 
-	snprintf(debug_id, sizeof(debug_id), "%u", (unsigned int)wl_resource_get_id(tbm_buffer->wl_buffer));
+	snprintf(debug_id, sizeof(debug_id), "%u",
+		(unsigned int)wl_resource_get_id(tbm_buffer->wl_buffer));
 	tbm_surface_internal_set_debug_data(surface, "id", debug_id);
 
 	return tbm_buffer->wl_buffer;
@@ -1047,6 +1056,7 @@ struct wayland_tbm_client_queue *
 wayland_tbm_server_client_queue_get(struct wayland_tbm_server *tbm_srv, struct wl_resource *wl_surface)
 {
 	struct wayland_tbm_client_queue *cqueue = NULL;
+
 	WL_TBM_RETURN_VAL_IF_FAIL(tbm_srv != NULL, NULL);
 	WL_TBM_RETURN_VAL_IF_FAIL(wl_surface != NULL, NULL);
 
@@ -1068,6 +1078,7 @@ wayland_tbm_server_client_queue_activate(struct wayland_tbm_client_queue *cqueue
 #ifdef DEBUG_TRACE
 	WL_TBM_TRACE("      pid:%d\n", cqueue->pid);
 #endif
+
 	wl_tbm_queue_send_active(cqueue->wl_tbm_queue, usage, queue_size, 1);
 }
 
@@ -1082,19 +1093,6 @@ wayland_tbm_server_client_queue_deactivate(struct wayland_tbm_client_queue *cque
 #endif
 
 	wl_tbm_queue_send_deactive(cqueue->wl_tbm_queue);
-}
-
-void
-wayland_tbm_server_client_queue_flush(struct wayland_tbm_client_queue *cqueue)
-{
-	WL_TBM_RETURN_IF_FAIL(cqueue != NULL);
-	WL_TBM_RETURN_IF_FAIL(cqueue->wl_tbm_queue != NULL);
-
-#ifdef DEBUG_TRACE
-	WL_TBM_TRACE("	  pid:%d\n", cqueue->pid);
-#endif
-
-	wl_tbm_queue_send_flush(cqueue->wl_tbm_queue);
 }
 
 struct wl_resource *
@@ -1136,6 +1134,19 @@ wayland_tbm_server_client_queue_export_buffer(struct wayland_tbm_client_queue *c
 	tbm_surface_internal_set_debug_data(surface, "id", debug_id);
 
 	return tbm_buffer->wl_buffer;
+}
+
+void
+wayland_tbm_server_client_queue_flush(struct wayland_tbm_client_queue *cqueue)
+{
+	WL_TBM_RETURN_IF_FAIL(cqueue != NULL);
+	WL_TBM_RETURN_IF_FAIL(cqueue->wl_tbm_queue != NULL);
+
+#ifdef DEBUG_TRACE
+	WL_TBM_TRACE("	  pid:%d\n", cqueue->pid);
+#endif
+
+	wl_tbm_queue_send_flush(cqueue->wl_tbm_queue);
 }
 
 void
