@@ -939,14 +939,16 @@ tbm_surface_h
 wayland_tbm_server_get_surface(struct wayland_tbm_server *tbm_srv,
 			       struct wl_resource *wl_buffer)
 {
-	struct wayland_tbm_buffer *tbm_buffer  = NULL;
-
 //	WL_TBM_RETURN_VAL_IF_FAIL(tbm_srv != NULL, NULL);
 	WL_TBM_RETURN_VAL_IF_FAIL(wl_buffer != NULL, NULL);
 
 	if (wl_resource_instance_of(wl_buffer, &wl_buffer_interface,
 				    &_wayland_tbm_buffer_impementation)) {
-		tbm_buffer = wl_resource_get_user_data(wl_buffer);
+		struct wayland_tbm_buffer *tbm_buffer;
+
+		tbm_buffer = (struct wayland_tbm_buffer *)
+					wl_resource_get_user_data(wl_buffer);
+
 		return tbm_buffer->surface;
 	}
 
@@ -957,13 +959,15 @@ uint32_t
 wayland_tbm_server_get_buffer_flags(struct wayland_tbm_server *tbm_srv,
 					struct wl_resource *wl_buffer)
 {
-	struct wayland_tbm_buffer *tbm_buffer  = NULL;
-
 	WL_TBM_RETURN_VAL_IF_FAIL(wl_buffer != NULL, 0);
 
 	if (wl_resource_instance_of(wl_buffer, &wl_buffer_interface,
 				    &_wayland_tbm_buffer_impementation)) {
-		tbm_buffer = wl_resource_get_user_data(wl_buffer);
+		struct wayland_tbm_buffer *tbm_buffer;
+
+		tbm_buffer = (struct wayland_tbm_buffer *)
+					wl_resource_get_user_data(wl_buffer);
+
 		return tbm_buffer->flags;
 	}
 
