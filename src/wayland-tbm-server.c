@@ -974,19 +974,16 @@ wayland_tbm_server_get_buffer_flags(struct wayland_tbm_server *tbm_srv,
 	return 0;
 }
 
-int
+static int
 _wayland_tbm_server_export_surface(struct wl_resource *wl_tbm,
-					struct wl_resource *wl_buffer, tbm_surface_h surface)
+					struct wl_resource *wl_buffer,
+					tbm_surface_h surface)
 {
-	tbm_surface_info_s info;
-	int num_buf;
 	int bufs[TBM_SURF_PLANE_MAX] = { -1, -1, -1, -1};
-	int flag;
-	int is_fd = -1;
-	int ret = -1, i;
+	int flag, i, is_fd = -1, num_buf;
+	tbm_surface_info_s info;
 
-	ret = tbm_surface_get_info(surface, &info);
-	if (ret != TBM_SURFACE_ERROR_NONE) {
+	if (tbm_surface_get_info(surface, &info) != TBM_SURFACE_ERROR_NONE) {
 		WL_TBM_S_LOG("Failed to create buffer from surface\n");
 		return 0;
 	}
@@ -999,7 +996,7 @@ _wayland_tbm_server_export_surface(struct wl_resource *wl_tbm,
 	num_buf = tbm_surface_internal_get_num_bos(surface);
 	if (num_buf == 0) {
 		WL_TBM_S_LOG("surface doesn't have any bo.\n");
-		goto err;
+		return 0;
 	}
 
 	flag = tbm_bo_get_flags(tbm_surface_internal_get_bo(surface, 0));
@@ -1012,14 +1009,14 @@ _wayland_tbm_server_export_surface(struct wl_resource *wl_tbm,
 		/* try to get fd first */
 		if (is_fd == -1 || is_fd == 1) {
 			bufs[i] = tbm_bo_export_fd(bo);
-			if (bufs[i] >= 0)
+			if (is_fd == -1 && bufs[i] >= 0)
 				is_fd = 1;
 		}
 
 		/* if fail to get fd, try to get name second */
 		if (is_fd == -1 || is_fd == 0) {
 			bufs[i] = tbm_bo_export(bo);
-			if (bufs[i] > 0)
+			if (is_fd == -1 && bufs[i] > 0)
 				is_fd = 0;
 		}
 
@@ -1064,6 +1061,7 @@ _wayland_tbm_server_export_surface(struct wl_resource *wl_tbm,
 	}
 
 	return 1;
+
 err:
 	for (i = 0; i < TBM_SURF_PLANE_MAX; i++) {
 		if (is_fd == 1 && (bufs[i] >= 0))
