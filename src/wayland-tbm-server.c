@@ -192,12 +192,14 @@ static const struct wl_buffer_interface _wayland_tbm_buffer_impementation = {
 static void
 _wayland_tbm_server_buffer_destory(struct wl_resource *wl_buffer)
 {
-	struct wayland_tbm_buffer *tbm_buffer = wl_resource_get_user_data(wl_buffer);
+	struct wayland_tbm_buffer *tbm_buffer =
+		(struct wayland_tbm_buffer *)wl_resource_get_user_data(wl_buffer);
 	WL_TBM_RETURN_IF_FAIL(tbm_buffer != NULL);
 
 #ifdef DEBUG_TRACE
-	pid_t pid = 0;
-	if (tbm_buffer && tbm_buffer->client)
+	pid_t pid;
+
+	if (tbm_buffer->client)
 		wl_client_get_credentials(tbm_buffer->client, &pid, NULL, NULL);
 	WL_TBM_TRACE("            pid:%d tbm_surface:%p\n", pid, tbm_buffer->surface);
 #endif
@@ -218,7 +220,9 @@ _wayland_tbm_server_buffer_destory(struct wl_resource *wl_buffer)
 
 static struct wayland_tbm_buffer *
 _wayland_tbm_server_tbm_buffer_create(struct wl_resource *wl_tbm,
-			struct wl_client *client, tbm_surface_h surface, uint id, int flags)
+					struct wl_client *client,
+					tbm_surface_h surface, uint id,
+					int flags)
 {
 	struct wayland_tbm_buffer *tbm_buffer;
 	struct wayland_tbm_user_data *ud;
@@ -226,8 +230,9 @@ _wayland_tbm_server_tbm_buffer_create(struct wl_resource *wl_tbm,
 	pid_t pid;
 
 	ud = _wayland_tbm_server_get_user_data(surface);
+	WL_TBM_RETURN_VAL_IF_FAIL(ud != NULL, NULL);
 
-	tbm_buffer = calloc(1, sizeof * tbm_buffer);
+	tbm_buffer = calloc(1, sizeof(*tbm_buffer));
 	if (tbm_buffer == NULL) {
 		WL_TBM_S_LOG("Error. fail to allocate a tbm_buffer.\n");
 		return NULL;
@@ -246,8 +251,8 @@ _wayland_tbm_server_tbm_buffer_create(struct wl_resource *wl_tbm,
 
 	wl_list_insert(&ud->wayland_tbm_buffer_list, &tbm_buffer->link_ref);
 	wl_resource_set_implementation(tbm_buffer->wl_buffer,
-				       (void (**)(void)) &_wayland_tbm_buffer_impementation,
-				       tbm_buffer, _wayland_tbm_server_buffer_destory);
+			       (void (**)(void)) &_wayland_tbm_buffer_impementation,
+			       tbm_buffer, _wayland_tbm_server_buffer_destory);
 
 	tbm_buffer->flags = flags;
 	tbm_buffer->surface = surface;
@@ -265,27 +270,24 @@ _wayland_tbm_server_tbm_buffer_create(struct wl_resource *wl_tbm,
 
 static void
 _wayland_tbm_server_impl_create_buffer(struct wl_client *client,
-				       struct wl_resource *wl_tbm,
-				       uint32_t id,
-				       int32_t width, int32_t height, uint32_t format, int32_t num_plane,
-				       int32_t buf_idx0, int32_t offset0, int32_t stride0,
-				       int32_t buf_idx1, int32_t offset1, int32_t stride1,
-				       int32_t buf_idx2, int32_t offset2, int32_t stride2,
-				       uint32_t flags,
-				       int32_t num_buf, uint32_t buf0, uint32_t buf1, uint32_t buf2)
+	       struct wl_resource *wl_tbm,
+	       uint32_t id,
+	       int32_t width, int32_t height, uint32_t format, int32_t num_plane,
+	       int32_t buf_idx0, int32_t offset0, int32_t stride0,
+	       int32_t buf_idx1, int32_t offset1, int32_t stride1,
+	       int32_t buf_idx2, int32_t offset2, int32_t stride2,
+	       uint32_t flags,
+	       int32_t num_buf, uint32_t buf0, uint32_t buf1, uint32_t buf2)
 {
 	struct wayland_tbm_server *tbm_srv = wl_resource_get_user_data(wl_tbm);
-	struct wayland_tbm_buffer *tbm_buffer = NULL;
-	tbm_surface_h surface = NULL;
-	tbm_surface_info_s info;
-	tbm_bo bos[TBM_SURF_PLANE_MAX];
 	int32_t names[TBM_SURF_PLANE_MAX] = { -1, -1, -1, -1};
-	int bpp;
-	int numPlane;
-	int i;
+	struct wayland_tbm_buffer *tbm_buffer;
+	tbm_surface_info_s info = { 0, };
+	tbm_bo bos[TBM_SURF_PLANE_MAX];
 	char debug_id[64] = {0, };
+	tbm_surface_h surface;
+	int i, numPlane;
 
-	bpp = tbm_surface_internal_get_bpp(format);
 	numPlane = tbm_surface_internal_get_num_planes(format);
 	if (numPlane != num_plane) {
 		wl_resource_post_error(wl_tbm, WL_TBM_ERROR_INVALID_FORMAT,
@@ -293,12 +295,10 @@ _wayland_tbm_server_impl_create_buffer(struct wl_client *client,
 		return;
 	}
 
-	memset(&info, 0x0, sizeof(tbm_surface_info_s));
-
 	info.width = width;
 	info.height = height;
 	info.format = format;
-	info.bpp = bpp;
+	info.bpp = tbm_surface_internal_get_bpp(format);
 	info.num_planes = numPlane;
 
 	/*Fill plane info*/
@@ -306,18 +306,16 @@ _wayland_tbm_server_impl_create_buffer(struct wl_client *client,
 		info.planes[0].offset = offset0;
 		info.planes[0].stride = stride0;
 		numPlane--;
-	}
-
-	if (numPlane > 0) {
-		info.planes[1].offset = offset1;
-		info.planes[1].stride = stride1;
-		numPlane--;
-	}
-
-	if (numPlane > 0) {
-		info.planes[2].offset = offset2;
-		info.planes[2].stride = stride2;
-		numPlane--;
+		if (numPlane > 0) {
+			info.planes[1].offset = offset1;
+			info.planes[1].stride = stride1;
+			numPlane--;
+			if (numPlane > 0) {
+				info.planes[2].offset = offset2;
+				info.planes[2].stride = stride2;
+				numPlane--;
+			}
+		}
 	}
 
 	/*Fill buffer*/
@@ -329,13 +327,18 @@ _wayland_tbm_server_impl_create_buffer(struct wl_client *client,
 		bos[i] = tbm_bo_import(tbm_srv->bufmgr, names[i]);
 
 	surface = tbm_surface_internal_create_with_bos(&info, bos, num_buf);
+	if (surface == NULL) {
+		wl_resource_post_no_memory(wl_tbm);
+		return;
+	}
+
 	for (i = 0; i < num_buf; i++)
 		tbm_bo_unref(bos[i]);
 
 	tbm_buffer = _wayland_tbm_server_tbm_buffer_create(wl_tbm, client, surface, id, flags);
 	if (tbm_buffer == NULL) {
-		tbm_surface_destroy(surface);
 		wl_resource_post_no_memory(wl_tbm);
+		tbm_surface_destroy(surface);
 		return;
 	}
 
@@ -343,18 +346,18 @@ _wayland_tbm_server_impl_create_buffer(struct wl_client *client,
 	tbm_surface_internal_set_debug_data(surface, "id", debug_id);
 
 #ifdef DEBUG_TRACE
-	pid_t pid = 0;
+	pid_t pid;
+
 	wl_client_get_credentials(client, &pid, NULL, NULL);
 	WL_TBM_TRACE("pid:%d tbm_surface:%p\n", pid, surface);
 #endif
-
 }
 
 static void
 _wayland_tbm_server_impl_create_buffer_with_fd(struct wl_client *client,
 		struct wl_resource *wl_tbm,
 		uint32_t id,
-		int32_t width, int32_t height, uint32_t format, int num_plane,
+		int32_t width, int32_t height, uint32_t format, int32_t num_plane,
 		int32_t buf_idx0, int32_t offset0, int32_t stride0,
 		int32_t buf_idx1, int32_t offset1, int32_t stride1,
 		int32_t buf_idx2, int32_t offset2, int32_t stride2,
@@ -362,17 +365,14 @@ _wayland_tbm_server_impl_create_buffer_with_fd(struct wl_client *client,
 		int32_t num_buf, int32_t buf0, int32_t buf1, int32_t buf2)
 {
 	struct wayland_tbm_server *tbm_srv = wl_resource_get_user_data(wl_tbm);
-	struct wayland_tbm_buffer *tbm_buffer = NULL;
-	tbm_surface_h surface = NULL;
-	tbm_surface_info_s info;
-	tbm_bo bos[TBM_SURF_PLANE_MAX];
 	int32_t names[TBM_SURF_PLANE_MAX] = { -1, -1, -1, -1};
-	int bpp;
-	int numPlane;
-	int i;
+	struct wayland_tbm_buffer *tbm_buffer;
+	tbm_surface_info_s info = { 0, };
+	tbm_bo bos[TBM_SURF_PLANE_MAX];
 	char debug_id[64] = {0, };
+	tbm_surface_h surface;
+	int i, numPlane;
 
-	bpp = tbm_surface_internal_get_bpp(format);
 	numPlane = tbm_surface_internal_get_num_planes(format);
 	if (numPlane != num_plane) {
 		wl_resource_post_error(wl_tbm, WL_TBM_ERROR_INVALID_FORMAT,
@@ -380,12 +380,10 @@ _wayland_tbm_server_impl_create_buffer_with_fd(struct wl_client *client,
 		goto done;
 	}
 
-	memset(&info, 0x0, sizeof(tbm_surface_info_s));
-
 	info.width = width;
 	info.height = height;
 	info.format = format;
-	info.bpp = bpp;
+	info.bpp = tbm_surface_internal_get_bpp(format);
 	info.num_planes = numPlane;
 
 	/*Fill plane info*/
@@ -393,18 +391,16 @@ _wayland_tbm_server_impl_create_buffer_with_fd(struct wl_client *client,
 		info.planes[0].offset = offset0;
 		info.planes[0].stride = stride0;
 		numPlane--;
-	}
-
-	if (numPlane > 0) {
-		info.planes[1].offset = offset1;
-		info.planes[1].stride = stride1;
-		numPlane--;
-	}
-
-	if (numPlane > 0) {
-		info.planes[2].offset = offset2;
-		info.planes[2].stride = stride2;
-		numPlane--;
+		if (numPlane > 0) {
+			info.planes[1].offset = offset1;
+			info.planes[1].stride = stride1;
+			numPlane--;
+			if (numPlane > 0) {
+				info.planes[2].offset = offset2;
+				info.planes[2].stride = stride2;
+				numPlane--;
+			}
+		}
 	}
 
 	/*Fill buffer*/
@@ -416,13 +412,18 @@ _wayland_tbm_server_impl_create_buffer_with_fd(struct wl_client *client,
 		bos[i] = tbm_bo_import_fd(tbm_srv->bufmgr, names[i]);
 
 	surface = tbm_surface_internal_create_with_bos(&info, bos, num_buf);
+	if (surface == NULL) {
+		wl_resource_post_no_memory(wl_tbm);
+		goto done;
+	}
+
 	for (i = 0; i < num_buf; i++)
 		tbm_bo_unref(bos[i]);
 
 	tbm_buffer = _wayland_tbm_server_tbm_buffer_create(wl_tbm, client, surface, id, flags);
 	if (tbm_buffer == NULL) {
-		tbm_surface_destroy(surface);
 		wl_resource_post_no_memory(wl_tbm);
+		tbm_surface_destroy(surface);
 		goto done;
 	}
 
@@ -430,7 +431,8 @@ _wayland_tbm_server_impl_create_buffer_with_fd(struct wl_client *client,
 	tbm_surface_internal_set_debug_data(surface, "id", debug_id);
 
 #ifdef DEBUG_TRACE
-	pid_t pid = 0;
+	pid_t pid;
+
 	wl_client_get_credentials(client, &pid, NULL, NULL);
 	WL_TBM_TRACE("pid:%d tbm_surface:%p\n", pid, surface);
 #endif
