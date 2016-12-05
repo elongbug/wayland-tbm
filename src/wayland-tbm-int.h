@@ -51,7 +51,7 @@ extern int bDlog;
 
 #define WL_TBM_C_LOG(fmt, ...) {\
 	if (bDlog) {\
-		LOGI("[WL_TBM_C] " fmt, ##__VA_ARGS__);\
+		LOGE("[WL_TBM_C] " fmt, ##__VA_ARGS__);\
 	} \
 	else {\
 		fprintf(stderr, "[WL_TBM_C(%d):%s] " fmt, getpid(), __func__, ##__VA_ARGS__);\
@@ -73,10 +73,21 @@ extern int bDlog;
 		fprintf(stderr, "[WL_TBM(%d)] " fmt, getpid(), ##__VA_ARGS__);\
 	} \
 }
+
+/* temp log */
+#define WL_TBM_LOG_E(fmt, ...) {\
+	if (bDlog) {\
+		LOGE("[WL_TBM] " fmt, ##__VA_ARGS__);\
+	} \
+	else {\
+		fprintf(stderr, "[WL_TBM(%d)] " fmt, getpid(), ##__VA_ARGS__);\
+	} \
+}
 #else
 #define WL_TBM_C_LOG(fmt, ...)   fprintf(stderr, "[WL_TBM_C(%d):%s] " fmt, getpid(), __func__, ##__VA_ARGS__)
 #define WL_TBM_S_LOG(fmt, ...)   fprintf(stderr, "[WL_TBM_S(%d):%s] " fmt, getpid(), __func__, ##__VA_ARGS__)
 #define WL_TBM_LOG(fmt, ...)     fprintf(stderr, "[WL_TBM(%d)] " fmt, getpid(), ##__VA_ARGS__)
+#define WL_TBM_LOG_E(fmt, ...)     fprintf(stderr, "[WL_TBM_E(%d)] " fmt, getpid(), ##__VA_ARGS__)
 #endif /* ENABLE_DLOG */
 
 #define WL_TBM_DEBUG(fmt, ...)   fprintf(stderr, "[WL_TBM:DEBUG(%d)] " fmt, getpid(), ##__VA_ARGS__)

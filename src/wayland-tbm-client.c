@@ -187,7 +187,7 @@ handle_tbm_buffer_import_with_id(void *data,
 	WL_TBM_GOTO_IF_FAIL(tbm_surface != NULL, fail);
 	wl_buffer_set_user_data(wl_buffer, tbm_surface);
 
-	WL_TBM_LOG("import id wl_buffer:%u tsurface:%p", (unsigned int)wl_proxy_get_id((struct wl_proxy *)wl_buffer), tbm_surface);
+	WL_TBM_LOG_E("import id wl_buffer:%u tsurface:%p", (unsigned int)wl_proxy_get_id((struct wl_proxy *)wl_buffer), tbm_surface);
 
 	snprintf(debug_id, sizeof(debug_id), "%u", (unsigned int)wl_proxy_get_id((struct wl_proxy *)wl_buffer));
 	tbm_surface_internal_set_debug_data(tbm_surface, "id", debug_id);
@@ -656,6 +656,7 @@ _wayland_tbm_client_surface_queue_flush(struct wayland_tbm_surface_queue *queue_
 #ifdef DEBUG_TRACE
 	WL_TBM_TRACE("pid:%d\n", getpid());
 #endif
+
 	_wayland_tbm_client_queue_destory_attach_bufs(queue_info);
 	tbm_surface_queue_set_size(queue_info->tbm_queue, queue_info->queue_size, 1);
 }
@@ -828,7 +829,7 @@ handle_tbm_queue_buffer_attached(void *data,
 
 	WL_TBM_RETURN_IF_FAIL(wl_buffer != NULL);
 
-	WL_TBM_LOG("attached wl_buffer:%u",
+	WL_TBM_LOG_E("attached wl_buffer:%u",
 		(unsigned int)wl_proxy_get_id((struct wl_proxy *)wl_buffer));
 
 	buffer = calloc(1, sizeof(struct wayland_tbm_buffer));
@@ -869,6 +870,8 @@ handle_tbm_queue_active(void *data,
 	struct wayland_tbm_surface_queue *queue_info =
 				(struct wayland_tbm_surface_queue *)data;
 
+	WL_TBM_LOG_E("active queue\n");
+
 	if (queue_info->is_active) {
 		WL_TBM_C_LOG("warning: queue_info is already activated\n");
 		return;
@@ -895,6 +898,8 @@ handle_tbm_queue_deactive(void *data,
 	WL_TBM_TRACE("                  pid:%d\n", getpid());
 #endif
 
+	WL_TBM_LOG_E("deactive queue\n");
+
 	if (!queue_info->is_active) {
 		WL_TBM_C_LOG("warning: queue_info is already deactivated\n");
 		return;
@@ -916,6 +921,7 @@ handle_tbm_queue_flush(void *data,
 #ifdef DEBUG_TRACE
 	WL_TBM_TRACE("pid:%d\n", getpid());
 #endif
+	WL_TBM_LOG_E("flush queue\n");
 
 	if (queue_info->is_active) {
 		WL_TBM_C_LOG("warning: Cannot flush the tbm_surface_queueu. The queue is activate.\n");

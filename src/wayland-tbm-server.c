@@ -1155,6 +1155,7 @@ wayland_tbm_server_client_queue_activate(struct wayland_tbm_client_queue *cqueue
 #ifdef DEBUG_TRACE
 	WL_TBM_TRACE("      pid:%d\n", cqueue->pid);
 #endif
+	WL_TBM_LOG_E("send active queue pid:%d\n", cqueue->pid);
 
 	wl_tbm_queue_send_active(cqueue->wl_tbm_queue, usage, queue_size, 1);
 }
@@ -1168,6 +1169,7 @@ wayland_tbm_server_client_queue_deactivate(struct wayland_tbm_client_queue *cque
 #ifdef DEBUG_TRACE
 	WL_TBM_TRACE("    pid:%d\n", cqueue->pid);
 #endif
+	WL_TBM_LOG_E("send deactive queue pid:%d", cqueue->pid);
 
 	wl_tbm_queue_send_deactive(cqueue->wl_tbm_queue);
 }
@@ -1216,6 +1218,8 @@ wayland_tbm_server_client_queue_export_buffer(
 		(unsigned int)wl_resource_get_id(tbm_buffer->wl_buffer));
 	tbm_surface_internal_set_debug_data(surface, "id", debug_id);
 
+	WL_TBM_LOG_E("export buffer pid:%d", cqueue->pid);
+
 	return tbm_buffer->wl_buffer;
 }
 
@@ -1228,6 +1232,7 @@ wayland_tbm_server_client_queue_flush(struct wayland_tbm_client_queue *cqueue)
 #ifdef DEBUG_TRACE
 	WL_TBM_TRACE("	  pid:%d\n", cqueue->pid);
 #endif
+	WL_TBM_LOG_E("send flush queue pid:%d", cqueue->pid);
 
 	wl_tbm_queue_send_flush(cqueue->wl_tbm_queue);
 }
