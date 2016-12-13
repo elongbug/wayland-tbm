@@ -993,20 +993,6 @@ wayland_tbm_client_create_surface_queue(struct wayland_tbm_client *tbm_client,
 	WL_TBM_RETURN_VAL_IF_FAIL(tbm_client != NULL, NULL);
 	WL_TBM_RETURN_VAL_IF_FAIL(surface != NULL, NULL);
 
-	/*
-	 * find the queue_info associated with the wl_surface.
-	 * client gets only one queue_info per a wl_surface.
-	 */
-	queue_info = _wayland_tbm_client_find_queue_info_wl_surface(tbm_client,
-								surface);
-	if (queue_info) {
-#ifdef DEBUG_TRACE
-		WL_TBM_TRACE(" wl_surface(%p) already get a tbm_surface_queue.\n",
-				surface);
-#endif
-		return queue_info->tbm_queue;
-	}
-
 	queue_info = calloc(1, sizeof(struct wayland_tbm_surface_queue));
 	WL_TBM_RETURN_VAL_IF_FAIL(queue_info != NULL, NULL);
 
