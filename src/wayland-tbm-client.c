@@ -760,7 +760,7 @@ __wayland_tbm_client_surface_alloc_cb(tbm_surface_queue_h surface_queue, void *d
 	tbm_surface_h surface = NULL;
 
 	if (queue_info->is_active) {
-		wl_list_for_each(buffer, &queue_info->attach_bufs, link) {
+		wl_list_for_each_reverse(buffer, &queue_info->attach_bufs, link) {
 			if (!buffer->allocated) {
 				surface = buffer->tbm_surface;
 				/* ref.. pair of __wayland_tbm_client_surface_free_cb */
