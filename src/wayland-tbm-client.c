@@ -373,6 +373,7 @@ wayland_tbm_client_init(struct wl_display *display)
 {
 	WL_TBM_RETURN_VAL_IF_FAIL(display != NULL, NULL);
 
+	struct wl_display *display_wrapper;
 	struct wayland_tbm_client *tbm_client;
 	struct wl_event_queue *wl_queue;
 	struct wl_registry *wl_registry;
@@ -386,15 +387,25 @@ wayland_tbm_client_init(struct wl_display *display)
 
 	tbm_client->dpy = display;
 
-	wl_queue = wl_display_create_queue(display);
-	if (!wl_queue) {
-		WL_TBM_LOG("Failed to create queue.\n");
-
+	display_wrapper = wl_proxy_create_wrapper(display);
+	if (!display_wrapper) {
+		WL_TBM_LOG("Failed to create display_wrapper.\n");
 		free(tbm_client);
 		return NULL;
 	}
 
-	wl_registry = wl_display_get_registry(display);
+	wl_queue = wl_display_create_queue(display);
+	if (!wl_queue) {
+		WL_TBM_LOG("Failed to create queue.\n");
+		wl_proxy_wrapper_destroy(display_wrapper);
+		free(tbm_client);
+		return NULL;
+	}
+
+	wl_proxy_set_queue((struct wl_proxy *)display_wrapper, wl_queue);
+
+	wl_registry = wl_display_get_registry(display_wrapper);
+	wl_proxy_wrapper_destroy(display_wrapper);
 	if (!wl_registry) {
 		WL_TBM_LOG("Failed to get registry\n");
 
@@ -402,8 +413,6 @@ wayland_tbm_client_init(struct wl_display *display)
 		free(tbm_client);
 		return NULL;
 	}
-
-	wl_proxy_set_queue((struct wl_proxy *)wl_registry, wl_queue);
 
 	wl_registry_add_listener(wl_registry, &registry_listener, tbm_client);
 	if (wl_display_roundtrip_queue(display, wl_queue) < 0) {
