@@ -74,6 +74,9 @@ wayland_tbm_client_get_wl_tbm_queue(struct wayland_tbm_client *tbm_client, struc
 struct wl_tbm *
 wayland_tbm_client_get_wl_tbm(struct wayland_tbm_client *tbm_client);
 
+int
+wayland_tbm_client_set_event_queue(struct wayland_tbm_client *tbm_client, struct wl_event_queue *queue);
+
 #ifdef  __cplusplus
 }
 #endif

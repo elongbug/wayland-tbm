@@ -57,6 +57,8 @@ struct wayland_tbm_client {
 	int queue_dump;
 
 	struct wl_list queue_info_list;
+
+	struct wl_event_queue *event_queue;
 };
 
 struct wayland_tbm_buffer {
@@ -367,6 +369,17 @@ static const struct wl_registry_listener registry_listener = {
 	_wayland_tbm_client_registry_handle_global,
 	NULL
 };
+
+int
+wayland_tbm_client_set_event_queue(struct wayland_tbm_client *tbm_client, struct wl_event_queue *queue)
+{
+	WL_TBM_RETURN_VAL_IF_FAIL(tbm_client != NULL, 0);
+
+	wl_proxy_set_queue((struct wl_proxy *)tbm_client->wl_tbm, queue);
+	tbm_client->event_queue = queue;
+
+	return 1;
+}
 
 struct wayland_tbm_client *
 wayland_tbm_client_init(struct wl_display *display)
