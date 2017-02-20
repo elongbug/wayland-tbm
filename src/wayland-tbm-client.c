@@ -89,6 +89,8 @@ struct wayland_tbm_surface_queue {
 	struct wl_list attach_bufs;
 
 	tbm_surface_queue_h tbm_queue;
+
+	struct wl_tbm *wl_tbm;
 	struct wl_list link;
 };
 
@@ -1030,6 +1032,38 @@ _handle_tbm_surface_queue_reset_notify(tbm_surface_queue_h surface_queue,
 	queue_info->format = format;
 }
 
+static void
+_handle_tbm_surface_queue_can_dequeue_notify(tbm_surface_queue_h surface_queue,
+		void *data)
+{
+	struct wayland_tbm_surface_queue *queue_info = data;
+	struct wayland_tbm_client *tbm_client = NULL;
+
+	WL_TBM_RETURN_IF_FAIL(queue_info != NULL);
+
+	if (!queue_info->is_active) return;
+
+	tbm_client = wl_tbm_get_user_data(queue_info->wl_tbm);
+	WL_TBM_RETURN_IF_FAIL(tbm_client != NULL);
+
+	if (!tbm_client->event_queue) return;
+
+	if (wl_display_roundtrip_queue(tbm_client->dpy, tbm_client->event_queue) == -1) {
+		int dpy_err;
+
+		WL_TBM_LOG_E("failed to wl_display_roundtrip_queue errno:%d\n", errno);
+
+		dpy_err = wl_display_get_error(tbm_client->dpy);
+		if (dpy_err == EPROTO) {
+			const struct wl_interface *interface;
+			uint32_t proxy_id, code;
+			code = wl_display_get_protocol_error(tbm_client->dpy, &interface, &proxy_id);
+			WL_TBM_LOG_E("protocol error interface:%s code:%d proxy_id:%d \n",
+						 interface->name, code, proxy_id);
+		}
+	}
+}
+
 tbm_surface_queue_h
 wayland_tbm_client_create_surface_queue(struct wayland_tbm_client *tbm_client,
 					struct wl_surface *surface,
@@ -1049,6 +1083,7 @@ wayland_tbm_client_create_surface_queue(struct wayland_tbm_client *tbm_client,
 	queue_info = calloc(1, sizeof(struct wayland_tbm_surface_queue));
 	WL_TBM_RETURN_VAL_IF_FAIL(queue_info != NULL, NULL);
 
+	queue_info->wl_tbm = tbm_client->wl_tbm;
 	queue_info->bufmgr = tbm_client->bufmgr;
 	queue_info->wl_surface = surface;
 	wl_list_init(&queue_info->attach_bufs);
@@ -1081,6 +1116,9 @@ wayland_tbm_client_create_surface_queue(struct wayland_tbm_client *tbm_client,
 
 	tbm_surface_queue_add_reset_cb(queue_info->tbm_queue,
 					_handle_tbm_surface_queue_reset_notify, queue_info);
+
+	tbm_surface_queue_add_can_dequeue_cb(queue_info->tbm_queue,
+					_handle_tbm_surface_queue_can_dequeue_notify, queue_info);
 
 #ifdef DEBUG_TRACE
 	WL_TBM_C_LOG("INFO cur(%dx%d fmt:0x%x num:%d) new(%dx%d fmt:0x%x num:%d)\n",
