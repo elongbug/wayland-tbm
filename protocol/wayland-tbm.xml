@@ -159,6 +159,10 @@
     <request name="detach_buffer">
       <arg name="buffer" type="object" interface="wl_buffer"/>
     </request>
+
+    <request name="dequeue_buffer">
+      <arg name="buffer" type="object" interface="wl_buffer"/>
+    </request>
   </interface>
 
   <interface name="wl_tbm_monitor" version="1">

@@ -1064,6 +1064,29 @@ _handle_tbm_surface_queue_can_dequeue_notify(tbm_surface_queue_h surface_queue,
 	}
 }
 
+static void
+_handle_tbm_surface_queue_trace_notify(tbm_surface_queue_h surface_queue,
+		tbm_surface_h tbm_surface, tbm_surface_queue_trace trace, void *data)
+{
+	struct wayland_tbm_surface_queue *queue_info = data;
+	struct wl_buffer *wl_buffer = NULL;
+	struct wayland_tbm_buffer *buffer = NULL;
+
+	WL_TBM_RETURN_IF_FAIL(queue_info != NULL);
+
+	if (trace != TBM_SURFACE_QUEUE_TRACE_DEQUEUE) return;
+	if (!queue_info->is_active) return;
+
+	wl_list_for_each(buffer, &queue_info->attach_bufs, link) {
+		if (buffer->tbm_surface == tbm_surface)
+			wl_buffer = buffer->wl_buffer;
+	}
+
+	if (!wl_buffer) return;
+
+	wl_tbm_queue_dequeue_buffer(queue_info->wl_tbm_queue, wl_buffer);
+}
+
 tbm_surface_queue_h
 wayland_tbm_client_create_surface_queue(struct wayland_tbm_client *tbm_client,
 					struct wl_surface *surface,
@@ -1119,6 +1142,9 @@ wayland_tbm_client_create_surface_queue(struct wayland_tbm_client *tbm_client,
 
 	tbm_surface_queue_add_can_dequeue_cb(queue_info->tbm_queue,
 					_handle_tbm_surface_queue_can_dequeue_notify, queue_info);
+
+	tbm_surface_queue_add_trace_cb(queue_info->tbm_queue,
+					_handle_tbm_surface_queue_trace_notify, queue_info);
 
 #ifdef DEBUG_TRACE
 	WL_TBM_C_LOG("INFO cur(%dx%d fmt:0x%x num:%d) new(%dx%d fmt:0x%x num:%d)\n",

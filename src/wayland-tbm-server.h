@@ -43,6 +43,9 @@ struct wayland_tbm_client_queue;
 
 typedef void (*wayland_tbm_server_surface_destroy_cb) (tbm_surface_h surface, void *data);
 
+typedef void (*wayland_tbm_server_client_queue_dequeue_cb) (struct wayland_tbm_client_queue *cqueue,
+					tbm_surface_h surface, void *data);
+
 struct wayland_tbm_server *
 wayland_tbm_server_init(struct wl_display *display,
 			const char *device_name,
@@ -83,6 +86,10 @@ wayland_tbm_server_client_queue_activate(struct wayland_tbm_client_queue *client
 
 void
 wayland_tbm_server_client_queue_deactivate(struct wayland_tbm_client_queue *client_queue);
+
+int
+wayland_tbm_server_client_queue_set_dequeue_cb(struct wayland_tbm_client_queue *client_queue,
+					wayland_tbm_server_client_queue_dequeue_cb dequeue_cb, void *user_data);
 
 struct wl_resource *
 wayland_tbm_server_client_queue_export_buffer(struct wayland_tbm_client_queue *client_queue,

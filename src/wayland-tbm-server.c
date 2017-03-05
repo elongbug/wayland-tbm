@@ -104,6 +104,9 @@ struct wayland_tbm_client_queue {
 	struct wl_resource *wl_surface;
 	pid_t pid;
 
+	wayland_tbm_server_client_queue_dequeue_cb dequeue_cb;
+	void *dequeue_cb_data;;
+
 	struct wl_list link;
 };
 
@@ -470,9 +473,35 @@ _wayland_tbm_server_queue_impl_detach_buffer(struct wl_client *client,
 #endif
 }
 
+static void
+_wayland_tbm_server_queue_impl_dequeue_buffer(struct wl_client *client,
+				      struct wl_resource *wl_tbm_queue,
+				      struct wl_resource *wl_buffer)
+{
+	struct wayland_tbm_client_queue *cqueue = NULL;
+	struct wayland_tbm_buffer *tbm_buffer = NULL;
+
+#ifdef DEBUG_TRACE
+	pid_t pid;
+
+	wl_client_get_credentials(client, &pid, NULL, NULL);
+	WL_TBM_TRACE("dequeue buffer. pid:%d\n", pid);
+#endif
+
+	cqueue = wl_resource_get_user_data(wl_tbm_queue);
+	WL_TBM_RETURN_IF_FAIL(cqueue);
+
+	tbm_buffer = wl_resource_get_user_data(wl_buffer);
+	WL_TBM_RETURN_IF_FAIL(tbm_buffer);
+
+	if (cqueue->dequeue_cb)
+		cqueue->dequeue_cb(cqueue, tbm_buffer->surface, cqueue->dequeue_cb_data);
+}
+
 static const struct wl_tbm_queue_interface _wayland_tbm_queue_impementation = {
 	_wayland_tbm_server_queue_impl_destroy,
 	_wayland_tbm_server_queue_impl_detach_buffer,
+	_wayland_tbm_server_queue_impl_dequeue_buffer,
 };
 
 static void
@@ -1149,6 +1178,8 @@ void
 wayland_tbm_server_client_queue_activate(struct wayland_tbm_client_queue *cqueue,
 			uint32_t usage, uint32_t queue_size, uint32_t need_flush)
 {
+	struct wl_client *wl_client = NULL;
+
 	WL_TBM_RETURN_IF_FAIL(cqueue != NULL);
 	WL_TBM_RETURN_IF_FAIL(cqueue->wl_tbm_queue != NULL);
 
@@ -1158,11 +1189,17 @@ wayland_tbm_server_client_queue_activate(struct wayland_tbm_client_queue *cqueue
 	WL_TBM_LOG("send active queue pid:%d\n", cqueue->pid);
 
 	wl_tbm_queue_send_active(cqueue->wl_tbm_queue, usage, queue_size, 1);
+
+	wl_client = wl_resource_get_client(cqueue->wl_tbm_queue);
+	if (wl_client)
+		wl_client_flush(wl_client);
 }
 
 void
 wayland_tbm_server_client_queue_deactivate(struct wayland_tbm_client_queue *cqueue)
 {
+	struct wl_client *wl_client = NULL;
+
 	WL_TBM_RETURN_IF_FAIL(cqueue != NULL);
 	WL_TBM_RETURN_IF_FAIL(cqueue->wl_tbm_queue != NULL);
 
@@ -1172,6 +1209,26 @@ wayland_tbm_server_client_queue_deactivate(struct wayland_tbm_client_queue *cque
 	WL_TBM_LOG("send deactive queue pid:%d", cqueue->pid);
 
 	wl_tbm_queue_send_deactive(cqueue->wl_tbm_queue);
+
+	wl_client = wl_resource_get_client(cqueue->wl_tbm_queue);
+	if (wl_client)
+		wl_client_flush(wl_client);
+}
+
+int
+wayland_tbm_server_client_queue_set_dequeue_cb(struct wayland_tbm_client_queue *cqueue,
+					wayland_tbm_server_client_queue_dequeue_cb dequeue_cb, void *user_data)
+{
+	WL_TBM_RETURN_VAL_IF_FAIL(cqueue != NULL, 0);
+	WL_TBM_RETURN_VAL_IF_FAIL(cqueue->wl_tbm_queue != NULL, 0);
+
+#ifdef DEBUG_TRACE
+	WL_TBM_TRACE("    pid:%d\n", cqueue->pid);
+#endif
+	cqueue->dequeue_cb = dequeue_cb;
+	cqueue->dequeue_cb_data = user_data;
+
+	return 1;
 }
 
 struct wl_resource *
