@@ -1,5 +1,5 @@
 Name:		libwayland-tbm
-Version:	0.1.18
+Version:	0.1.19
 Release:	0
 Summary:	Wayland TBM Protocol
 License:	MIT
