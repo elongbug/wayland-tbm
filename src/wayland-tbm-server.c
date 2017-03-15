@@ -708,8 +708,8 @@ _wayland_tbm_monitor_impl_tbm_monitor(struct wl_client *client,
 	int i = 0;
 
 	if (command == WL_TBM_MONITOR_COMMAND_LIST) {
-		WL_TBM_DEBUG("==================  app list	 =======================\n");
-		WL_TBM_DEBUG("no pid  app_name\n");
+		WL_TBM_LOG("==================  app list	 =======================\n");
+		WL_TBM_LOG("no pid  app_name\n");
 
 		if (!wl_list_empty(&tbm_srv->tbm_monitor_list)) {
 			wl_resource_for_each(c_res, &tbm_srv->tbm_monitor_list) {
@@ -722,11 +722,11 @@ _wayland_tbm_monitor_impl_tbm_monitor(struct wl_client *client,
 				_wayland_tbm_util_get_appname_from_pid(c_pid, app_name);
 				_wayland_tbm_util_get_appname_brief(app_name);
 
-				WL_TBM_DEBUG("%-3d%-5d%s\n", ++i, c_pid, app_name);
+				WL_TBM_LOG("%-3d%-5d%s\n", ++i, c_pid, app_name);
 			}
 		}
 
-		WL_TBM_DEBUG("======================================================\n");
+		WL_TBM_LOG("======================================================\n");
 
 		return;
 	}
