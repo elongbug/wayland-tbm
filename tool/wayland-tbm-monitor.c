@@ -90,80 +90,80 @@ static const struct wl_registry_listener registry_listener = {
 static void
 _wl_tbm_trace_usage()
 {
-	WL_TBM_LOG("  trace : trace the changes or the infomation of the tbm_bo\n");
-	WL_TBM_LOG("   usage : wayland-tbm-monitor trace [command]\n");
-	WL_TBM_LOG("    <command>\n");
-	WL_TBM_LOG("      on                     : turn on the trace.\n");
-	WL_TBM_LOG("      off                    : turn off the trace.\n");
-	WL_TBM_LOG("      register client [pid]  : register the pid of client to trace.\n");
-	WL_TBM_LOG("      register server        : register the server to trace.\n");
-	WL_TBM_LOG("      register all           : register all clients and server.\n");
-	WL_TBM_LOG("      unregister client [pid]: unregister the pid of client to trace.\n");
-	WL_TBM_LOG("      unregister server      : unregister the server to trace.\n");
-	WL_TBM_LOG("      unregister all         : unregister all clients and server.\n");
-	WL_TBM_LOG("      status                 : show the status of the trace setting values.\n");
-	WL_TBM_LOG("    <examples>\n");
-	WL_TBM_LOG("      # wayland-tbm-monitor trace register client 1234\n");
-	WL_TBM_LOG("      # wayland-tbm-monitor trace on\n");
-	WL_TBM_LOG("      # wayland-tbm-monitor trace off\n");
-	WL_TBM_LOG("\n");
+	fprintf(stderr, "  trace : trace the changes or the infomation of the tbm_bo\n");
+	fprintf(stderr, "   usage : wayland-tbm-monitor trace [command]\n");
+	fprintf(stderr, "    <command>\n");
+	fprintf(stderr, "      on                     : turn on the trace.\n");
+	fprintf(stderr, "      off                    : turn off the trace.\n");
+	fprintf(stderr, "      register client [pid]  : register the pid of client to trace.\n");
+	fprintf(stderr, "      register server        : register the server to trace.\n");
+	fprintf(stderr, "      register all           : register all clients and server.\n");
+	fprintf(stderr, "      unregister client [pid]: unregister the pid of client to trace.\n");
+	fprintf(stderr, "      unregister server      : unregister the server to trace.\n");
+	fprintf(stderr, "      unregister all         : unregister all clients and server.\n");
+	fprintf(stderr, "      status                 : show the status of the trace setting values.\n");
+	fprintf(stderr, "    <examples>\n");
+	fprintf(stderr, "      # wayland-tbm-monitor trace register client 1234\n");
+	fprintf(stderr, "      # wayland-tbm-monitor trace on\n");
+	fprintf(stderr, "      # wayland-tbm-monitor trace off\n");
+	fprintf(stderr, "\n");
 }
 
 static void
 _wl_tbm_dump_usage()
 {
-	WL_TBM_LOG("  dump : dump the tbm_surfaces\n");
-	WL_TBM_LOG("   usage : wayland-tbm-monitor dump [command]\n");
-	WL_TBM_LOG("    <command>\n");
-	WL_TBM_LOG("      snapshot client [pid] : make dumps of all tbm_surfaces for the client with pid.\n");
-	WL_TBM_LOG("      snapshot server       : make dumps of all tbm_surfaces for the server.\n");
-	WL_TBM_LOG("      snapshot all          : make dumps of all tbm_surfaces for all clients and server.\n");
-	WL_TBM_LOG("      queue client [pid]    : make dumps of all tbm_surfaces for the client with pid at enqueue and aquire.\n");
-	WL_TBM_LOG("      queue server          : make dumps of all tbm_surfaces for the server at enqueue and aquire.\n");
-	WL_TBM_LOG("      queue all             : make dumps of all tbm_surfaces for all clients and server at enqueue and aquire.\n");
-	WL_TBM_LOG("      queue on              : turn on the dumps of the tbm surface queue.\n");
-	WL_TBM_LOG("      queue off             : turn off the dumps of the tbm surface queue.\n");
-	WL_TBM_LOG("    <examples>\n");
-	WL_TBM_LOG("      # wayland-tbm-monitor dump snapshot all\n");
-	WL_TBM_LOG("      # wayland-tbm-monitor dump queue all\n");
-	WL_TBM_LOG("      # wayland-tbm-monitor dump queue on\n");
-	WL_TBM_LOG("      # wayland-tbm-monitor dump queue off\n");
-	WL_TBM_LOG("\n");
+	fprintf(stderr, "  dump : dump the tbm_surfaces\n");
+	fprintf(stderr, "   usage : wayland-tbm-monitor dump [command]\n");
+	fprintf(stderr, "    <command>\n");
+	fprintf(stderr, "      snapshot client [pid] : make dumps of all tbm_surfaces for the client with pid.\n");
+	fprintf(stderr, "      snapshot server       : make dumps of all tbm_surfaces for the server.\n");
+	fprintf(stderr, "      snapshot all          : make dumps of all tbm_surfaces for all clients and server.\n");
+	fprintf(stderr, "      queue client [pid]    : make dumps of all tbm_surfaces for the client with pid at enqueue and aquire.\n");
+	fprintf(stderr, "      queue server          : make dumps of all tbm_surfaces for the server at enqueue and aquire.\n");
+	fprintf(stderr, "      queue all             : make dumps of all tbm_surfaces for all clients and server at enqueue and aquire.\n");
+	fprintf(stderr, "      queue on              : turn on the dumps of the tbm surface queue.\n");
+	fprintf(stderr, "      queue off             : turn off the dumps of the tbm surface queue.\n");
+	fprintf(stderr, "    <examples>\n");
+	fprintf(stderr, "      # wayland-tbm-monitor dump snapshot all\n");
+	fprintf(stderr, "      # wayland-tbm-monitor dump queue all\n");
+	fprintf(stderr, "      # wayland-tbm-monitor dump queue on\n");
+	fprintf(stderr, "      # wayland-tbm-monitor dump queue off\n");
+	fprintf(stderr, "\n");
 }
 
 static void
 _wl_tbm_show_usage()
 {
-	WL_TBM_LOG("  show : show the infomation of the tbm_bo\n");
-	WL_TBM_LOG("   show usage : wayland-tbm-monitor show [target]\n");
-	WL_TBM_LOG("    <target>\n");
-	WL_TBM_LOG("      client [pid]: shows all tbm_bo information contained by pid of client.\n");
-	WL_TBM_LOG("      server      : shows all tbm_bo information contained by server.\n");
-	WL_TBM_LOG("      all         : shows all tbm_bo information contained by all clients and server.\n");
-	WL_TBM_LOG("    <examples>\n");
-	WL_TBM_LOG("      # wayland-tbm-monitor show client 1234\n");
-	WL_TBM_LOG("      # wayland-tbm-monitor show server\n");
-	WL_TBM_LOG("      # wayland-tbm-monitor show all\n");
-	WL_TBM_LOG("\n");
+	fprintf(stderr, "  show : show the infomation of the tbm_bo\n");
+	fprintf(stderr, "   show usage : wayland-tbm-monitor show [target]\n");
+	fprintf(stderr, "    <target>\n");
+	fprintf(stderr, "      client [pid]: shows all tbm_bo information contained by pid of client.\n");
+	fprintf(stderr, "      server      : shows all tbm_bo information contained by server.\n");
+	fprintf(stderr, "      all         : shows all tbm_bo information contained by all clients and server.\n");
+	fprintf(stderr, "    <examples>\n");
+	fprintf(stderr, "      # wayland-tbm-monitor show client 1234\n");
+	fprintf(stderr, "      # wayland-tbm-monitor show server\n");
+	fprintf(stderr, "      # wayland-tbm-monitor show all\n");
+	fprintf(stderr, "\n");
 }
 
 static void
 _wl_tbm_list_usage()
 {
-	WL_TBM_LOG("  list : list the wayland-tbm client\n");
-	WL_TBM_LOG("   list usage : wayland-tbm-monitor list\n");
-	WL_TBM_LOG("\n");
+	fprintf(stderr, "  list : list the wayland-tbm client\n");
+	fprintf(stderr, "   list usage : wayland-tbm-monitor list\n");
+	fprintf(stderr, "\n");
 }
 
 static void
 _wl_tbm_usage()
 {
-	WL_TBM_LOG("wayland-tbm-monitor : show/trace the infomation of tbm_bo in clietns and in server.\n");
+	fprintf(stderr, "wayland-tbm-monitor : show/trace the infomation of tbm_bo in clietns and in server.\n");
 	_wl_tbm_list_usage();
 	_wl_tbm_show_usage();
 	_wl_tbm_trace_usage();
 	_wl_tbm_dump_usage();
-	WL_TBM_LOG("\n");
+	fprintf(stderr, "\n");
 }
 
 static int
@@ -172,7 +172,7 @@ _wl_tbm_select_target_option(struct wayland_tbm_monitor *tbm_monitor, int argc,
 {
 	if (!strncmp(argv[arg_pos], "client", strlen(argv[arg_pos]) + 1)) {
 		if (argc < (arg_pos + 2)) {
-			WL_TBM_LOG("error: no pid. please type the pid.\n");
+			fprintf(stderr, "error: no pid. please type the pid.\n");
 			return 0;
 		}
 
@@ -228,27 +228,27 @@ _wl_tbm_monitor_process_options(struct wayland_tbm_monitor *tbm_monitor,
 			tbm_monitor->options.target = WL_TBM_MONITOR_TARGET_ALL;
 		} else if (!strncmp(argv[2], "register", strlen(argv[2]) + 1)) {
 			if (argc < 4) {
-				WL_TBM_LOG("error: no pid. please type the target(client [pid]/server/all).\n");
+				fprintf(stderr, "error: no pid. please type the target(client [pid]/server/all).\n");
 				_wl_tbm_trace_usage();
 				return 0;
 			}
 
 			tbm_monitor->options.trace_command = WL_TBM_MONITOR_TRACE_COMMAND_REGISTER;
 			if (!_wl_tbm_select_target_option(tbm_monitor, argc, argv, 3)) {
-				WL_TBM_LOG("error: no pid. please type the target(client [pid]/server/all).\n");
+				fprintf(stderr, "error: no pid. please type the target(client [pid]/server/all).\n");
 				_wl_tbm_trace_usage();
 				return 0;
 			}
 		} else if (!strncmp(argv[2], "unregister", strlen(argv[2]) + 1)) {
 			if (argc < 4) {
-				WL_TBM_LOG("error: no pid. please type the target(client [pid]/server/all).\n");
+				fprintf(stderr, "error: no pid. please type the target(client [pid]/server/all).\n");
 				_wl_tbm_trace_usage();
 				return 0;
 			}
 
 			tbm_monitor->options.trace_command = WL_TBM_MONITOR_TRACE_COMMAND_UNREGISTER;
 			if (!_wl_tbm_select_target_option(tbm_monitor, argc, argv, 3)) {
-				WL_TBM_LOG("error: no pid. please type the target(client [pid]/server/all).\n");
+				fprintf(stderr, "error: no pid. please type the target(client [pid]/server/all).\n");
 				_wl_tbm_trace_usage();
 				return 0;
 			}
@@ -271,7 +271,7 @@ _wl_tbm_monitor_process_options(struct wayland_tbm_monitor *tbm_monitor,
 		if (!strncmp(argv[2], "snapshot", strlen(argv[2]) + 1)) {
 			tbm_monitor->options.dump_command = WL_TBM_MONITOR_DUMP_COMMAND_SNAPSHOT;
 			if (!_wl_tbm_select_target_option(tbm_monitor, argc, argv, 3)) {
-				WL_TBM_LOG("error: no pid. please type the target(client [pid]/server/all).\n");
+				fprintf(stderr, "error: no pid. please type the target(client [pid]/server/all).\n");
 				_wl_tbm_dump_usage();
 				return 0;
 			}
@@ -286,7 +286,7 @@ _wl_tbm_monitor_process_options(struct wayland_tbm_monitor *tbm_monitor,
 			} else {
 				tbm_monitor->options.dump_command = WL_TBM_MONITOR_DUMP_COMMAND_QUEUE;
 				if (!_wl_tbm_select_target_option(tbm_monitor, argc, argv, 3)) {
-					WL_TBM_LOG("error: no pid. please type the target(client [pid]/server/all).\n");
+					fprintf(stderr, "error: no pid. please type the target(client [pid]/server/all).\n");
 					_wl_tbm_dump_usage();
 					return 0;
 				}
@@ -327,7 +327,7 @@ main(int argc, char *argv[])
 	WL_TBM_GOTO_IF_FAIL(wl_registry != NULL, out);
 
 #ifdef WL_TBM_MONITOR_DEBUG
-	WL_TBM_LOG("[%s]: tbm_monitor=%p, display=%p\n", __func__, tbm_monitor,
+	fprintf(stderr, "[%s]: tbm_monitor=%p, display=%p\n", __func__, tbm_monitor,
 		   tbm_monitor->dpy);
 #endif
 
