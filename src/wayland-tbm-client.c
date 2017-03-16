@@ -850,6 +850,7 @@ handle_tbm_queue_buffer_attached(void *data,
 	struct wayland_tbm_surface_queue *queue_info =
 				(struct wayland_tbm_surface_queue *)data;
 	struct wayland_tbm_buffer *buffer;
+	int width, height;
 
 	WL_TBM_RETURN_IF_FAIL(wl_buffer != NULL);
 
@@ -870,6 +871,16 @@ handle_tbm_queue_buffer_attached(void *data,
 	buffer->flags = flags;
 
 	wl_list_insert(&queue_info->attach_bufs, &buffer->link);
+
+	width = tbm_surface_get_width(buffer->tbm_surface);
+	height = tbm_surface_get_height(buffer->tbm_surface);
+	if (queue_info->width != width || queue_info->height != height) {
+		if (queue_info->is_active) {
+			queue_info->is_active = 0;
+
+			_wayland_tbm_client_surface_queue_flush(queue_info);
+		}
+	}
 
 #ifdef DEBUG_TRACE
 	WL_TBM_TRACE("pid:%d wl_buffer:%p tbm_surface:%p\n",
