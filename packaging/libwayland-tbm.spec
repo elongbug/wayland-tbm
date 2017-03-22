@@ -60,8 +60,6 @@ make %{?_smp_mflags}
 
 %install
 rm -rf %{buildroot}
-mkdir -p %{buildroot}/%{TZ_SYS_RO_SHARE}/license
-cp -af COPYING %{buildroot}/%{TZ_SYS_RO_SHARE}/license/%{name}
 %make_install
 
 %post -n libwayland-tbm-client -p /sbin/ldconfig
@@ -73,13 +71,13 @@ cp -af COPYING %{buildroot}/%{TZ_SYS_RO_SHARE}/license/%{name}
 %files -n libwayland-tbm-server
 %defattr(-,root,root)
 %manifest %{name}.manifest
-%{TZ_SYS_RO_SHARE}/license/%{name}
+%license COPYING
 %_libdir/libwayland-tbm-server.so.0*
 
 %files -n libwayland-tbm-client
 %defattr(-,root,root)
 %manifest %{name}.manifest
-%{TZ_SYS_RO_SHARE}/license/%{name}
+%license COPYING
 %_libdir/libwayland-tbm-client.so.0*
 %{_bindir}/wayland-tbm-monitor
 
