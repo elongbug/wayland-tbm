@@ -85,6 +85,7 @@ struct wayland_tbm_surface_queue {
 	struct wl_surface *wl_surface;
 
 	int is_active;
+	int active_flush;
 	int usage;
 	struct wl_list attach_bufs;
 
@@ -783,7 +784,7 @@ __wayland_tbm_client_surface_alloc_cb(tbm_surface_queue_h surface_queue, void *d
 	struct wayland_tbm_buffer *buffer;
 	tbm_surface_h surface = NULL;
 
-	if (queue_info->is_active) {
+	if (queue_info->is_active && queue_info->active_flush) {
 		wl_list_for_each_reverse(buffer, &queue_info->attach_bufs, link) {
 			if (!buffer->allocated) {
 				surface = buffer->tbm_surface;
@@ -874,9 +875,11 @@ handle_tbm_queue_buffer_attached(void *data,
 
 	width = tbm_surface_get_width(buffer->tbm_surface);
 	height = tbm_surface_get_height(buffer->tbm_surface);
+
 	if (queue_info->width != width || queue_info->height != height) {
-		if (queue_info->is_active) {
+		if (queue_info->is_active && queue_info->active_flush) {
 			queue_info->is_active = 0;
+			queue_info->active_flush = 0;
 
 			_wayland_tbm_client_surface_queue_flush(queue_info);
 		}
@@ -915,8 +918,11 @@ handle_tbm_queue_active(void *data,
 	WL_TBM_TRACE("                  pid:%d\n", getpid());
 #endif
 
-	/* flush the allocated surfaces at the client */
-	tbm_surface_queue_set_size(queue_info->tbm_queue, queue_size, need_flush);
+	if (need_flush) {
+		/* flush the allocated surfaces at the client */
+		tbm_surface_queue_set_size(queue_info->tbm_queue, queue_size, 1);
+		queue_info->active_flush = need_flush;
+	}
 
 	queue_info->is_active = 1;
 	queue_info->usage = usage;
@@ -942,8 +948,11 @@ handle_tbm_queue_deactive(void *data,
 
 	queue_info->is_active = 0;
 
-	/* flush the attached surfaces */
-	_wayland_tbm_client_surface_queue_flush(queue_info);
+	if (queue_info->active_flush) {
+		queue_info->active_flush = 0;
+		/* flush the attached surfaces */
+		_wayland_tbm_client_surface_queue_flush(queue_info);
+	}
 }
 
 static void
@@ -958,7 +967,7 @@ handle_tbm_queue_flush(void *data,
 #endif
 	WL_TBM_LOG("flush queue\n");
 
-	if (queue_info->is_active) {
+	if (queue_info->is_active && queue_info->active_flush) {
 		WL_TBM_C_LOG("warning: Cannot flush the tbm_surface_queueu. The queue is activate.\n");
 		return;
 	}
@@ -1032,9 +1041,10 @@ _handle_tbm_surface_queue_reset_notify(tbm_surface_queue_h surface_queue,
 	if (queue_info->width != width || queue_info->height != height ||
 		queue_info->format != format) {
 		/* remove the attach_bufs int the queue_info */
-		if (queue_info->is_active) {
+		if (queue_info->is_active && queue_info->active_flush) {
 			_wayland_tbm_client_queue_destory_attach_bufs(queue_info);
 			queue_info->is_active = 0;
+			queue_info->active_flush = 0;
 		}
 	}
 
@@ -1052,7 +1062,7 @@ _handle_tbm_surface_queue_can_dequeue_notify(tbm_surface_queue_h surface_queue,
 
 	WL_TBM_RETURN_IF_FAIL(queue_info != NULL);
 
-	if (!queue_info->is_active) return;
+	if (!queue_info->is_active || !queue_info->active_flush) return;
 
 	tbm_client = wl_tbm_get_user_data(queue_info->wl_tbm);
 	WL_TBM_RETURN_IF_FAIL(tbm_client != NULL);
@@ -1086,7 +1096,7 @@ _handle_tbm_surface_queue_trace_notify(tbm_surface_queue_h surface_queue,
 	WL_TBM_RETURN_IF_FAIL(queue_info != NULL);
 
 	if (trace != TBM_SURFACE_QUEUE_TRACE_DEQUEUE) return;
-	if (!queue_info->is_active) return;
+	if (!queue_info->is_active || !queue_info->active_flush) return;
 
 	wl_list_for_each(buffer, &queue_info->attach_bufs, link) {
 		if (buffer->tbm_surface == tbm_surface)
