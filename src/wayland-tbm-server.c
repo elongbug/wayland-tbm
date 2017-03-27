@@ -1194,7 +1194,7 @@ wayland_tbm_server_client_queue_activate(struct wayland_tbm_client_queue *cqueue
 #endif
 	WL_TBM_LOG("send active queue pid:%d\n", cqueue->pid);
 
-	wl_tbm_queue_send_active(cqueue->wl_tbm_queue, usage, queue_size, 1);
+	wl_tbm_queue_send_active(cqueue->wl_tbm_queue, usage, queue_size, need_flush);
 
 	wl_client = wl_resource_get_client(cqueue->wl_tbm_queue);
 	if (wl_client)
