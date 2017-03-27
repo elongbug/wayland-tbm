@@ -605,6 +605,7 @@ static void
 _wayland_tbm_server_destroy_resource(struct wl_resource *wl_tbm)
 {
 	struct wayland_tbm_server *tbm_srv;
+	struct wayland_tbm_client_queue *cqueue = NULL;
 
 #ifdef DEBUG_TRACE
 	pid_t pid;
@@ -619,6 +620,11 @@ _wayland_tbm_server_destroy_resource(struct wl_resource *wl_tbm)
 		(struct wayland_tbm_server *)wl_resource_get_user_data(wl_tbm);
 	if (!tbm_srv)
 		return;
+
+	wl_list_for_each(cqueue, &tbm_srv->cqueue_list, link) {
+		if (cqueue && cqueue->wl_tbm == wl_tbm)
+			cqueue->wl_tbm = NULL;
+	}
 
 	/* remove the queue resources */
 	// TODO:
@@ -1167,7 +1173,7 @@ wayland_tbm_server_client_queue_get(struct wayland_tbm_server *tbm_srv, struct w
 	WL_TBM_RETURN_VAL_IF_FAIL(wl_surface != NULL, NULL);
 
 	wl_list_for_each(cqueue, &tbm_srv->cqueue_list, link) {
-		if (cqueue && cqueue->wl_surface == wl_surface)
+		if (cqueue && cqueue->wl_tbm && cqueue->wl_surface == wl_surface)
 			return cqueue;
 	}
 
@@ -1244,6 +1250,7 @@ wayland_tbm_server_client_queue_export_buffer(
 
 	WL_TBM_RETURN_VAL_IF_FAIL(cqueue != NULL, NULL);
 	WL_TBM_RETURN_VAL_IF_FAIL(cqueue->wl_tbm_queue != NULL, NULL);
+	WL_TBM_RETURN_VAL_IF_FAIL(cqueue->wl_tbm != NULL, NULL);
 	WL_TBM_RETURN_VAL_IF_FAIL(surface != NULL, NULL);
 
 	wl_tbm = cqueue->wl_tbm;
