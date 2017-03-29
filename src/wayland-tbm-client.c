@@ -1000,6 +1000,24 @@ _wayland_tbm_client_find_queue_info_wl_surface(struct wayland_tbm_client *tbm_cl
 	return NULL;
 }
 
+static struct wayland_tbm_surface_queue *
+_wayland_tbm_client_find_queue_info_queue(struct wayland_tbm_client *tbm_client,
+					tbm_surface_queue_h queue)
+{
+	/* set the debug_pid to the surface for debugging */
+	if (!wl_list_empty(&tbm_client->queue_info_list)) {
+		struct wayland_tbm_surface_queue *queue_info = NULL;
+
+		wl_list_for_each(queue_info, &tbm_client->queue_info_list, link) {
+			if (queue_info->tbm_queue == queue)
+				return queue_info;
+		}
+	}
+
+	return NULL;
+}
+
+
 static void
 _handle_tbm_surface_queue_destroy_notify(tbm_surface_queue_h surface_queue,
 		void *data)
@@ -1208,3 +1226,20 @@ wayland_tbm_client_get_wl_tbm(struct wayland_tbm_client *tbm_client)
 
 	return tbm_client->wl_tbm;
 }
+
+int
+wayland_tbm_client_queue_check_activate(struct wayland_tbm_client *tbm_client, tbm_surface_queue_h queue)
+{
+	struct wayland_tbm_surface_queue *queue_info = NULL;
+
+	WL_TBM_RETURN_VAL_IF_FAIL(tbm_client != NULL, 0);
+	WL_TBM_RETURN_VAL_IF_FAIL(queue != NULL, 0);
+
+	queue_info = _wayland_tbm_client_find_queue_info_queue(tbm_client, queue);
+	WL_TBM_RETURN_VAL_IF_FAIL(queue_info != NULL, 0);
+
+	if (queue_info->is_active) return 1;
+
+	return 0;
+}
+
