@@ -984,6 +984,8 @@ wayland_tbm_server_get_surface(struct wayland_tbm_server *tbm_srv,
 		tbm_buffer = (struct wayland_tbm_buffer *)
 					wl_resource_get_user_data(wl_buffer);
 
+		WL_TBM_RETURN_VAL_IF_FAIL(tbm_buffer != NULL, NULL);
+
 		return tbm_buffer->surface;
 	}
 
